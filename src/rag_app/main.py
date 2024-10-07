@@ -10,13 +10,13 @@ import uvicorn
 from fastapi import FastAPI
 from api import routes
 from rag_app.config import settings
-from rag_app.core.storage import FileStorage
-from rag_app.core.domain_manager import DomainManager
-from rag_app.core.chunk_strategy import SentenceChunkStrategy
-from rag_app.core.chat_model import ChatModel, OCI_CommandRplus, OCI_Llama3_70
-from rag_app.core.vector_store import ChromaVectorStore
-from rag_app.core.embedding_model import CohereEmbedding
-from rag_app.core.query_engine import QueryEngine
+from rag_app.core.implementations.storage.file_storage import FileStorage
+from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
+from rag_app.core.implementations.chunk_strategy.sentence_strategy import SentenceChunkStrategy
+from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus, OCI_Llama3_70
+from rag_app.core.implementations.vector_store.vector_store import ChromaVectorStore
+from rag_app.core.implementations.embedding_model.embedding_model import CohereEmbedding
+from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from dotenv import load_dotenv
 
 load_dotenv()
