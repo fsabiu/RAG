@@ -1,26 +1,33 @@
 import logging
 from typing import List, Dict, Any
 from ...interfaces.query_engine_interface import QueryEngineInterface
-from ..domain_manager.domain_manager import DomainManager
-from ..vector_store.vector_store import VectorStore
-from ..query_optimizer.query_optimizer import QueryOptimizer
-from ..result_reranker.result_reranker import ResultReRanker
-from ..embedding_model.embedding_model import EmbeddingModel
-from ..chat_model.chat_model import ChatModel, OCI_CommandRplus
-from ..chunk_strategy.chunk_strategy import ChunkStrategy, SentenceChunkStrategy
-from ...config import settings
+from ...interfaces.domain_manager_interface import DomainManagerInterface
+from ...interfaces.vector_store_interface import VectorStoreInterface
+from ...interfaces.query_optimizer_interface import QueryOptimizerInterface
+from ...interfaces.reranker_interface import ReRankerInterface
+from ...interfaces.embedding_model_interface import EmbeddingModelInterface
+from ...interfaces.chat_model_interface import ChatModelInterface
+from ...interfaces.chunk_strategy_interface import ChunkStrategyInterface
+from rag_app.config import settings
 
 logger = logging.getLogger(__name__)
 
 class QueryEngine(QueryEngineInterface):
-    def __init__(self, domain_manager: DomainManager, vector_stores: Dict[str, VectorStore], embedding_model: EmbeddingModel):
+    def __init__(self, 
+                 domain_manager: DomainManagerInterface, 
+                 vector_stores: Dict[str, VectorStoreInterface], 
+                 embedding_model: EmbeddingModelInterface,
+                 chat_model: ChatModelInterface,
+                 chunk_strategy: ChunkStrategyInterface,
+                 query_optimizer: QueryOptimizerInterface,
+                 result_re_ranker: ReRankerInterface):
         self.domain_manager = domain_manager
         self.vector_stores = vector_stores
-        self.query_optimizer = QueryOptimizer()
-        self.result_re_ranker = ResultReRanker()
         self.embedding_model = embedding_model
-        self.chat_model = OCI_CommandRplus()
-        self.chunk_strategy = SentenceChunkStrategy()
+        self.chat_model = chat_model
+        self.chunk_strategy = chunk_strategy
+        self.query_optimizer = query_optimizer
+        self.result_re_ranker = result_re_ranker
         logger.info("QueryEngine initialized")
 
     def prepare_domains(self) -> None:

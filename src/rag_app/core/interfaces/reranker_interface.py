@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
-class ReRanker(ABC):
+class ReRankerInterface(ABC):
     @abstractmethod
     def re_rank(self, results: List[Dict[str, Any]], original_query: str) -> List[Dict[str, Any]]:
         """

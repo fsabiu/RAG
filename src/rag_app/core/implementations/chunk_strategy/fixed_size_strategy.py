@@ -1,10 +1,10 @@
 from typing import List
 import logging
-from src.rag_app.core.interfaces.chunk_strategy import ChunkStrategy
+from src.rag_app.core.interfaces.chunk_strategy_interface import ChunkStrategyInterface
 
 logger = logging.getLogger(__name__)
 
-class FixedSizeChunkStrategy(ChunkStrategy):
+class FixedSizeChunkStrategy(ChunkStrategyInterface):
     def __init__(self, chunk_size: int, overlap: int = 0):
         self.chunk_size = chunk_size
         self.overlap = overlap

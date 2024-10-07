@@ -4,7 +4,7 @@ from langchain_community.chat_models import ChatOCIGenAI
 from langchain_core.prompts import PromptTemplate
 from typing import Optional, Iterator, Union
 import oci
-from rag_app.core.interfaces.chat_model import ChatModel
+from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
 
 # Enable debug logging for the entire oci package
 logging.getLogger('oci').setLevel(logging.DEBUG)
@@ -14,7 +14,7 @@ oci.base_client.is_http_log_enabled(True)
 
 logger = logging.getLogger(__name__)
 
-class OCI_CommandRplus(ChatModel):
+class OCI_CommandRplus(ChatModelInterface):
     def __init__(self):
         logger.info("Initializing OCI_CommandRplus chat model")
         self.llm = ChatOCIGenAI(
@@ -50,7 +50,7 @@ class OCI_CommandRplus(ChatModel):
         for chunk in llm_chain.stream(query):
             yield chunk
 
-class OCI_Llama3_70(ChatModel):
+class OCI_Llama3_70(ChatModelInterface):
     def __init__(self):
         logger.info("Initializing OCI_Llama3-70 chat model")
         # Add any specific initialization for OCI_Llama3-70

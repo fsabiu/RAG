@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Protocol
 
 class DocumentInterface(ABC):
     @property
@@ -37,3 +37,7 @@ class DocumentInterface(ABC):
     @abstractmethod
     def set_chunks(self, chunks: List[str]) -> None:
         pass
+
+class DocumentFactoryInterface(Protocol):
+    def create_document(self, name: str, collection: str, title: str, content: str) -> DocumentInterface:
+        ...

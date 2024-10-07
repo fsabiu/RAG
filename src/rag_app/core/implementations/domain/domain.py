@@ -1,9 +1,9 @@
 from typing import List
-from ..document import Document
+from ...interfaces.document_interface import DocumentInterface
 from ...interfaces.domain_interface import DomainInterface
 
 class Domain(DomainInterface):
-    def __init__(self, name: str, description: str, documents: List[Document]):
+    def __init__(self, name: str, description: str, documents: List[DocumentInterface]):
         self.name = name
         self.description = description
         self.documents = documents

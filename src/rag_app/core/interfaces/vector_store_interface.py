@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
-class VectorStore(ABC):
+class VectorStoreInterface(ABC):
     @abstractmethod
     def store_embeddings(self, embeddings: List[List[float]], metadata: List[Dict[str, Any]], ids: List[str], documents: List[str]) -> None:
         pass

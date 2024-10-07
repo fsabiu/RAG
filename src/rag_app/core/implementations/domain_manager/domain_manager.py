@@ -2,38 +2,41 @@ import logging
 from typing import Dict, List
 from ...interfaces.domain_manager_interface import DomainManagerInterface
 from ...interfaces.domain_interface import DomainInterface
+from ...interfaces.document_interface import DocumentInterface
+from ...interfaces.storage_interface import StorageInterface
+from ...interfaces.chunk_strategy_interface import ChunkStrategyInterface
+from ...interfaces.chat_model_interface import ChatModelInterface
 from ..document.document import Document
 from ..domain.domain import Domain
 
 logger = logging.getLogger(__name__)
 
 class DomainManager(DomainManagerInterface):
-    def __init__(self, storage, chunk_strategy, chat_model):
+    def __init__(self, storage, chunk_strategy, chat_model, domain_factory, document_factory):
         self.storage = storage
         self.chunk_strategy = chunk_strategy
         self.chat_model = chat_model
-        self.domains: Dict[str, Domain] = self._create_domains()
+        self.domain_factory = domain_factory
+        self.document_factory = document_factory
+        self.domains: Dict[str, DomainInterface] = self._create_domains()
 
-    def _create_domains(self) -> Dict[str, Domain]:
+    def _create_domains(self) -> Dict[str, DomainInterface]:
         domains = {}
         collections = self.storage.get_all_collections()
         
         for collection_name in collections:
             documents = self._create_documents(collection_name)
             description = self._get_collection_description(collection_name)
-            domains[collection_name] = Domain(collection_name, description, documents)
+            domains[collection_name] = self.domain_factory.create_domain(collection_name, description, documents)
         
         return domains
 
-    def _create_documents(self, collection_name: str) -> List[Document]:
+    def _create_documents(self, collection_name: str) -> List[DocumentInterface]:
         documents = []
-        collection_items = self.storage.get_collection_items(collection_name)
-        
-        for doc_name, content in collection_items.items():
-            # Preprocess content if needed
-            document = Document(doc_name, collection_name, content)
+        for doc_name in self.storage.get_collection_items(collection_name):
+            content = self.storage.get_item(collection_name, doc_name)
+            document = self.document_factory.create_document(name = doc_name, collection=collection_name, title=doc_name, content=content)
             documents.append(document)
-        
         return documents
 
     def _get_collection_description(self, collection_name: str) -> str:

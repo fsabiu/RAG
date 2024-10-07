@@ -2,13 +2,13 @@ import json
 import os
 from typing import Dict, List
 import logging
-from src.rag_app.core.interfaces.storage import Storage
+from src.rag_app.core.interfaces.storage_interface import StorageInterface
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class ObjectStorage(Storage):
+class ObjectStorage(StorageInterface):
     def __init__(self, connection_string: str):
         # Initialize database connection
         self.connection_string = connection_string

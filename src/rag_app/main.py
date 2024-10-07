@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+from dotenv import load_dotenv
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -10,14 +11,29 @@ import uvicorn
 from fastapi import FastAPI
 from api import routes
 from rag_app.config import settings
-from rag_app.core.implementations.storage.file_storage import FileStorage
+
+# Interfaces
+from rag_app.core.interfaces.storage_interface import StorageInterface
+from rag_app.core.interfaces.domain_interface import DomainFactoryInterface
+from rag_app.core.interfaces.document_interface import DocumentFactoryInterface
+from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
+from rag_app.core.interfaces.chunk_strategy_interface import ChunkStrategyInterface
+from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
+from rag_app.core.interfaces.vector_store_interface import VectorStoreInterface
+from rag_app.core.interfaces.embedding_model_interface import EmbeddingModelInterface
+from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
+
+# Implementations
+from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus
+from rag_app.core.implementations.chunk_strategy.fixed_size_strategy import FixedSizeChunkStrategy
+from rag_app.core.implementations.domain.domain_factory import DomainFactory
+from rag_app.core.implementations.document.document_factory import DocumentFactory
 from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
-from rag_app.core.implementations.chunk_strategy.sentence_strategy import SentenceChunkStrategy
-from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus, OCI_Llama3_70
-from rag_app.core.implementations.vector_store.vector_store import ChromaVectorStore
+from rag_app.core.implementations.storage.file_storage import FileStorage
 from rag_app.core.implementations.embedding_model.embedding_model import CohereEmbedding
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
-from dotenv import load_dotenv
+from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
+from rag_app.core.implementations.reranker.reranker import ResultReRanker
 
 load_dotenv()
 
@@ -66,12 +82,19 @@ def main():
 
     # Initialize chunking strategy
     logger.info("Initializing chunking strategy...")
-    chunk_strategy = SentenceChunkStrategy()
+    chunk_strategy = FixedSizeChunkStrategy(chunk_size=1000, overlap=200)
+
+    # Initialize domain and document factories
+    domain_factory = DomainFactory()
+    document_factory = DocumentFactory()
 
     # Initialize DomainManager
     logger.info("Initializing DomainManager...")
+    # Initialize domain and document factories
+    domain_factory = DomainFactory()
+    document_factory = DocumentFactory()
     start_time = time.time()
-    domain_manager = DomainManager(storage, chunk_strategy, chat_model)
+    domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory)
     end_time = time.time()
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
 
@@ -115,7 +138,15 @@ def main():
         sys.exit(1)
 
     # Initialize QueryEngine with the vector stores
-    query_engine = QueryEngine(domain_manager, vector_stores, embedding_model)
+    query_engine = QueryEngine(
+        domain_manager=domain_manager,
+        vector_stores=vector_stores,
+        embedding_model=embedding_model,
+        chat_model=chat_model,
+        chunk_strategy=chunk_strategy,
+        query_optimizer=QueryOptimizer(),  # To be implemented
+        result_re_ranker=ResultReRanker()  # To be implemented
+    )
 
     """
     # Perform offline initializations

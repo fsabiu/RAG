@@ -1,11 +1,11 @@
 from typing import List, Dict, Any
 import logging
 import chromadb
-from src.rag_app.core.interfaces.vector_store_interface import VectorStore
+from src.rag_app.core.interfaces.vector_store_interface import VectorStoreInterface
 
 logger = logging.getLogger(__name__)
 
-class ChromaVectorStore(VectorStore):
+class ChromaVectorStore(VectorStoreInterface):
     def __init__(self, collection_name: str, persist_directory: str = "./chroma_db"):
         self.client = chromadb.PersistentClient(path=persist_directory)
         self.collection = self.client.get_or_create_collection(name=collection_name)

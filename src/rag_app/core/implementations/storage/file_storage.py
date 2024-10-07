@@ -1,14 +1,14 @@
 import json
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 import logging
-from src.rag_app.core.interfaces.storage import Storage
+from src.rag_app.core.interfaces.storage_interface import StorageInterface
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class FileStorage(Storage):
+class FileStorage(StorageInterface):
     def __init__(self, base_path: str):
         self.base_path = base_path
         
@@ -54,3 +54,17 @@ class FileStorage(Storage):
         else:
             logger.warning(f"Collection not found: {collection_name}")
         return items
+
+    def get_item(self, collection_name: str, item_name: str) -> Optional[str]:
+        file_path = os.path.join(self.base_path, collection_name, item_name)
+        if os.path.isfile(file_path):
+            try:
+                with open(file_path, 'r') as f:
+                    content = f.read()
+                logger.debug(f"Retrieved item '{item_name}' from collection '{collection_name}'")
+                return content
+            except IOError as e:
+                logger.error(f"Error reading file '{item_name}' from collection '{collection_name}': {e}")
+        else:
+            logger.warning(f"Item '{item_name}' not found in collection '{collection_name}'")
+        return None
