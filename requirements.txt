@@ -9,6 +9,11 @@ oci
 langchain-community
 pydantic-settings
 
+# File handling
+python-docx
+PyPDF2
+chardet
+
 # Temporary
 chromadb
 cohere

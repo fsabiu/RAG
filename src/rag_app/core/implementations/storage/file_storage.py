@@ -3,6 +3,9 @@ import os
 from typing import Dict, List, Optional
 import logging
 from src.rag_app.core.interfaces.storage_interface import StorageInterface
+from docx import Document
+from PyPDF2 import PdfReader
+import chardet
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -59,12 +62,42 @@ class FileStorage(StorageInterface):
         file_path = os.path.join(self.base_path, collection_name, item_name)
         if os.path.isfile(file_path):
             try:
-                with open(file_path, 'r') as f:
-                    content = f.read()
-                logger.debug(f"Retrieved item '{item_name}' from collection '{collection_name}'")
-                return content
-            except IOError as e:
+                _, file_extension = os.path.splitext(item_name)
+                file_extension = file_extension.lower()
+
+                if file_extension in ['.txt', '.md']:
+                    return self._read_text_file(file_path)
+                elif file_extension == '.docx':
+                    return self._read_docx(file_path)
+                elif file_extension == '.pdf':
+                    return self._read_pdf(file_path)
+                else:
+                    logger.warning(f"Unsupported file type: {file_extension}")
+                    return None
+
+            except Exception as e:
                 logger.error(f"Error reading file '{item_name}' from collection '{collection_name}': {e}")
         else:
             logger.warning(f"Item '{item_name}' not found in collection '{collection_name}'")
         return None
+
+    def _read_text_file(self, file_path: str) -> str:
+        with open(file_path, 'rb') as f:
+            raw_data = f.read()
+        detected = chardet.detect(raw_data)
+        encoding = detected['encoding'] or 'utf-8'  # Default to utf-8 if detection fails
+        try:
+            return raw_data.decode(encoding)
+        except UnicodeDecodeError:
+            # If decoding fails, try with 'latin-1' as a fallback
+            logger.warning(f"Failed to decode {file_path} with {encoding}, falling back to latin-1")
+            return raw_data.decode('latin-1')
+
+    def _read_docx(self, file_path: str) -> str:
+        doc = Document(file_path)
+        return '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+
+    def _read_pdf(self, file_path: str) -> str:
+        with open(file_path, 'rb') as f:
+            pdf = PdfReader(f)
+            return '\n'.join([page.extract_text() for page in pdf.pages])

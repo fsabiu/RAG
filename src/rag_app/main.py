@@ -145,6 +145,40 @@ def main():
         result_re_ranker=ResultReRanker()  # To be implemented
     )
 
+    # Apply chunking strategy
+    logger.info("Applying chunking strategy...")
+    start_time = time.time()
+    domain_manager.apply_chunking_strategy()
+    end_time = time.time()
+    logger.info(f"Chunking strategy applied in {end_time - start_time:.2f} seconds")
+
+    # Get all domains
+    logger.info("Fetching all domains:")
+    domains = domain_manager.get_domains()
+    for domain in domains:
+        logger.info(f"  - {domain}")
+
+    # Get all documents per domain
+    logger.info("Fetching documents for each domain:")
+    for domain in domains:
+        documents = domain_manager.get_domain_documents(domain.name)
+        logger.info(f"  Domain: {domain.name}")
+        for doc in documents:
+            logger.info(f"    - {doc}")
+
+    # Fetch the first document of the first domain and print its chunks
+    if domains and documents:
+        first_domain = domains[0]
+        first_document = first_domain.documents[0]
+        logger.info(f"Fetching chunks for the first document of {first_domain.name}:")
+        document = domain_manager.get_domain_document(first_domain.name, first_document.name)
+        chunks = document.get_chunks()
+        logger.info(f"  Chunk lenght: {str(len(chunks))}")
+        logger.info(f"  Document: {document.name}")
+        logger.info(f"  Number of chunks: {len(chunks)}")
+        for i, chunk in enumerate(chunks[:5], 1):  # Print first 5 chunks
+            logger.info(f"    Chunk {i}: {chunk[:100]}...")  # Print first 100 characters of each chunk
+
     """
     # Perform offline initializations
     # vector_store = VectorStore(settings.DATABASE_URL)

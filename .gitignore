@@ -8,6 +8,9 @@ venv/
 env/
 *.venv
 
+# Data
+data/
+
 # Logs
 *.log
 

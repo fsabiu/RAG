@@ -23,5 +23,5 @@ class FixedSizeChunkStrategy(ChunkStrategyInterface):
             
             start = end - self.overlap
 
-        logger.debug(f"Created {len(chunks)} chunks")
+        logger.info(f"Created {len(chunks)} chunks")
         return chunks
