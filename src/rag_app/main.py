@@ -26,6 +26,7 @@ from rag_app.core.interfaces.vector_store_interface import VectorStoreInterface
 # Implementations
 from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus
 from rag_app.core.implementations.chunk_strategy.fixed_size_strategy import FixedSizeChunkStrategy
+from rag_app.core.implementations.chunk_strategy.semantic_strategy import SemanticChunkStrategy
 from rag_app.core.implementations.document.document_factory import DocumentFactory
 from rag_app.core.implementations.domain.domain_factory import DomainFactory
 from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
@@ -42,46 +43,58 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+# Set the logger level to WARNING to suppress info and debug logs
+logging.getLogger('cohere').setLevel(logging.WARNING)
+
+# Suppress unwanted logs
+logging.getLogger('botocore').setLevel(logging.ERROR)
+logging.getLogger('boto3').setLevel(logging.ERROR)
+logging.getLogger('urllib3').setLevel(logging.ERROR)
+logging.getLogger('posthog').setLevel(logging.ERROR)
+logging.getLogger('sagemaker').setLevel(logging.ERROR)
 
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
+
 
 def main():
     logger.info("Initializing application...")
 
-    # Initialize chat model
     logger.info("Initializing chat model...")
     try:
         chat_model: ChatModel = OCI_CommandRplus()
         logger.info(f"{chat_model.__class__.__name__} chat model initialized successfully")
-        
     except Exception as e:
         logger.error(f"Failed to initialize or test chat model: {str(e)}")
         sys.exit(1)
 
-    # Initialize storage
     try:
         storage = FileStorage(settings.DATA_FOLDER)
     except (FileNotFoundError, NotADirectoryError) as e:
         logger.error(f"Failed to initialize storage: {e}")
         sys.exit(1)
 
-    # Get and log all collections from Storage
+
     collections = storage.get_all_collections()
     logger.info(f"Found {len(collections)} collections:")
     for collection in collections:
         logger.info(f"  - {collection}")
 
-    # Initialize chunking strategy
+    logger.info("Initializing CohereEmbedding model...")
+    try:
+        embedding_model = CohereEmbedding(model_name="embed-english-v3.0")
+        logger.info("CohereEmbedding model initialized successfully")
+    except ValueError as e:
+        logger.error(f"Failed to initialize CohereEmbedding model: {str(e)}")
+        sys.exit(1)
+        
     logger.info("Initializing chunking strategy...")
-    chunk_strategy = FixedSizeChunkStrategy(chunk_size=1000, overlap=200)
+    #chunk_strategy = FixedSizeChunkStrategy(chunk_size=1000, overlap=200)
+    chunk_strategy = SemanticChunkStrategy(max_chunk_size=1000, embedding_model=embedding_model)
 
-    # Initialize domain and document factories
     domain_factory = DomainFactory()
     document_factory = DocumentFactory()
 
-    # Initialize DomainManager
     logger.info("Initializing DomainManager...")
-
     start_time = time.time()
     # Initialize domain and document factories
     domain_factory = DomainFactory()
@@ -99,8 +112,6 @@ def main():
     """
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
 
-
-    # Initialize vector stores
     logger.info("Initializing ChromaVectorStores...")
     vector_stores = {}
     for domain in domain_manager.get_domains():
@@ -113,28 +124,17 @@ def main():
             logger.error(f"Failed to create ChromaVectorStore for collection '{collection_name}': {str(e)}")
             # Continue with the next domain instead of exiting
             continue
-    
-     # Initialize embedding model
-    logger.info("Initializing CohereEmbedding model...")
-    try:
-        embedding_model = CohereEmbedding(model_name="embed-english-v3.0")
-        logger.info("CohereEmbedding model initialized successfully")
-    except ValueError as e:
-        logger.error(f"Failed to initialize CohereEmbedding model: {str(e)}")
-        sys.exit(1)
 
-    # Initialize QueryEngine with the vector stores
     query_engine = QueryEngine(
         domain_manager=domain_manager,
         vector_stores=vector_stores,
         embedding_model=embedding_model,
         chat_model=chat_model,
         chunk_strategy=chunk_strategy,
-        query_optimizer=QueryOptimizer(),  # To be implemented
-        result_re_ranker=ResultReRanker()  # To be implemented
+        query_optimizer=QueryOptimizer(),
+        result_re_ranker=ResultReRanker()
     )
 
-    # Apply chunking strategy
     logger.info("Applying chunking strategy...")
     start_time = time.time()
     domain_manager.apply_chunking_strategy()

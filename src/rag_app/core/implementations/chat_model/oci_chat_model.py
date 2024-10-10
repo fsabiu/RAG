@@ -7,7 +7,7 @@ import oci
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
 
 # Enable debug logging for the entire oci package
-logging.getLogger('oci').setLevel(logging.DEBUG)
+#logging.getLogger('oci').setLevel(logging.DEBUG)
 
 # Enable request logging
 oci.base_client.is_http_log_enabled(True)

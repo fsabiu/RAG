@@ -9,12 +9,18 @@ logger = logging.getLogger(__name__)
 
 class CohereEmbedding(EmbeddingModelInterface):
     def __init__(self, model_name: str = "embed-english-v3.0"):
-        self.model_name = model_name
+        self._model_name = model_name
         api_key = os.environ.get("COHERE_API_KEY")
         if not api_key:
             raise ValueError("COHERE_API_KEY environment variable is not set")
         self.client = cohere.ClientV2(api_key=api_key)
+        
         logger.info(f"Initializing Cohere embedding model: {model_name}")
+        pass
+
+    @property
+    def model_name(self) -> str:
+        return self._model_name
 
     def generate_embedding(self, chunk: str) -> List[float]:
         logger.debug(f"Generating embedding for chunk: {chunk[:50]}...")
