@@ -4,8 +4,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import APIRouter, Depends, HTTPException
-from rag_app.core.query_engine import QueryEngine
-from rag_app.core.domain_manager import DomainManager
+from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
+from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
 from rag_app.config import settings
 import logging
 
@@ -23,7 +23,7 @@ def get_domain_manager():
 # API Routes
 
 @router.post("/ask")
-async def ask(question: str, domain_name: str, query_engine: QueryEngine = Depends(get_query_engine)):
+async def ask(question: str, domain_name: str, query_engine: QueryEngineInterface = Depends(get_query_engine)):
     """
     Ask a question within a specific domain.
     """

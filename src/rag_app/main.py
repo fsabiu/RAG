@@ -13,27 +13,28 @@ from api import routes
 from rag_app.config import settings
 
 # Interfaces
-from rag_app.core.interfaces.storage_interface import StorageInterface
-from rag_app.core.interfaces.domain_interface import DomainFactoryInterface
-from rag_app.core.interfaces.document_interface import DocumentFactoryInterface
-from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
-from rag_app.core.interfaces.chunk_strategy_interface import ChunkStrategyInterface
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
-from rag_app.core.interfaces.vector_store_interface import VectorStoreInterface
+from rag_app.core.interfaces.chunk_strategy_interface import ChunkStrategyInterface
+from rag_app.core.interfaces.document_interface import DocumentFactoryInterface
+from rag_app.core.interfaces.domain_interface import DomainFactoryInterface
+from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
 from rag_app.core.interfaces.embedding_model_interface import EmbeddingModelInterface
 from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
+from rag_app.core.interfaces.storage_interface import StorageInterface
+from rag_app.core.interfaces.vector_store_interface import VectorStoreInterface
 
 # Implementations
 from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus
 from rag_app.core.implementations.chunk_strategy.fixed_size_strategy import FixedSizeChunkStrategy
-from rag_app.core.implementations.domain.domain_factory import DomainFactory
 from rag_app.core.implementations.document.document_factory import DocumentFactory
+from rag_app.core.implementations.domain.domain_factory import DomainFactory
 from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
-from rag_app.core.implementations.storage.file_storage import FileStorage
 from rag_app.core.implementations.embedding_model.embedding_model import CohereEmbedding
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
 from rag_app.core.implementations.reranker.reranker import ResultReRanker
+from rag_app.core.implementations.storage.file_storage import FileStorage
+from rag_app.core.implementations.vector_store.vector_store import ChromaVectorStore
 
 load_dotenv()
 
@@ -52,12 +53,6 @@ def main():
     try:
         chat_model: ChatModel = OCI_CommandRplus()
         logger.info(f"{chat_model.__class__.__name__} chat model initialized successfully")
-        
-        # Test chat model
-        test_message = "Hi, how are you?"
-        logger.info(f"Testing chat model with message: '{test_message}'")
-        response = chat_model.chat("Prompt:", test_message)
-        logger.info(f"Chat model response: '{response}'")
         
     except Exception as e:
         logger.error(f"Failed to initialize or test chat model: {str(e)}")
@@ -96,14 +91,16 @@ def main():
     start_time = time.time()
     domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory)
     end_time = time.time()
+    """
+    Domain manager will have:
+    - Storage
+    - Chunk strategy
+    - Chat model
+    - Domains, that are dicts of:
+        - Domain name -> Domain
+        where Domains are lists of Documents (i.e. doc name, collection_name, title)
+    """
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
-
-    # Apply chunking strategy
-    logger.info("Applying chunking strategy...")
-    start_time = time.time()
-    domain_manager.apply_chunking_strategy()
-    end_time = time.time()
-    logger.info(f"Chunking strategy applied in {end_time - start_time:.2f} seconds")
 
     # Print domain info
     logger.info("Domain information:")

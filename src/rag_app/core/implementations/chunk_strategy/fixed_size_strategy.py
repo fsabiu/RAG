@@ -11,5 +11,17 @@ class FixedSizeChunkStrategy(ChunkStrategyInterface):
 
     def chunk_text(self, content: str) -> List[str]:
         logger.info(f"Applying fixed size chunking strategy with size {self.chunk_size} and overlap {self.overlap}")
-        # Implement fixed size chunking logic here
-        return [content]
+        
+        chunks = []
+        start = 0
+        content_length = len(content)
+
+        while start < content_length:
+            end = start + self.chunk_size
+            chunk = content[start:end]
+            chunks.append(chunk)
+            
+            start = end - self.overlap
+
+        logger.debug(f"Created {len(chunks)} chunks")
+        return chunks
