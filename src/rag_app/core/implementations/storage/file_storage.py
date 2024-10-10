@@ -25,10 +25,6 @@ class FileStorage(StorageInterface):
             raise NotADirectoryError(f"Base path is not a directory: {self.base_path}")
         
         logger.info(f"Initialized FileStorage with base path: {self.base_path}")
-        
-        # Log the collections found
-        collections = self.get_all_collections()
-        logger.info(f"Found {len(collections)} collections: {', '.join(collections)}")
 
     def get_all_collections(self) -> List[str]:
         collections = [d for d in os.listdir(self.base_path) if os.path.isdir(os.path.join(self.base_path, d))]

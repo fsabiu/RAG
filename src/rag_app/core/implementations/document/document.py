@@ -1,11 +1,11 @@
-from typing import List
+from typing import List, Optional
 from ...interfaces.document_interface import DocumentInterface
 
 class Document(DocumentInterface):
-    def __init__(self, name: str, collection: str, content: str):
+    def __init__(self, name: str, collection: str, title: str, content: Optional[str] = None):
         self._name = name
         self._collection = collection
-        self._title = name  # Same as name for now
+        self._title = title
         self._content = content
         self._keywords: List[str] = []
         self._chunks: List[str] = []
@@ -22,9 +22,11 @@ class Document(DocumentInterface):
     def title(self) -> str:
         return self._title
 
-    @property
-    def content(self) -> str:
+    def get_content(self) -> Optional[str]:
         return self._content
+
+    def set_content(self, content: str) -> None:
+        self._content = content
 
     def get_keywords(self) -> List[str]:
         return self._keywords

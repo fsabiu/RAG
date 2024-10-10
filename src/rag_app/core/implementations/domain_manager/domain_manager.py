@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from ...interfaces.domain_manager_interface import DomainManagerInterface
 from ...interfaces.domain_interface import DomainInterface
 from ...interfaces.document_interface import DocumentInterface
@@ -18,24 +19,32 @@ class DomainManager(DomainManagerInterface):
         self.chat_model = chat_model
         self.domain_factory = domain_factory
         self.document_factory = document_factory
-        self.domains: Dict[str, DomainInterface] = self._create_domains()
+        self.domains: Dict[str, DomainInterface] = {}
+        self._create_domains()
 
-    def _create_domains(self) -> Dict[str, DomainInterface]:
-        domains = {}
-        domain_names = self.storage.get_all_collections()  # Renamed variable for clarity
+    def _create_domains(self) -> None:
+        domain_names = self.storage.get_all_collections()
         
-        for domain_name in domain_names:
-            documents = self._create_documents(domain_name)
-            description = self._get_domain_description(domain_name)  # Renamed method
-            domains[domain_name] = self.domain_factory.create_domain(domain_name, description, documents)
-        
-        return domains
+        with ThreadPoolExecutor() as executor:
+            future_to_domain = {executor.submit(self._create_domain, domain_name): domain_name for domain_name in domain_names}
+            for future in as_completed(future_to_domain):
+                domain_name = future_to_domain[future]
+                try:
+                    domain = future.result()
+                    self.domains[domain_name] = domain
+                except Exception as exc:
+                    logger.error(f"Error creating domain {domain_name}: {exc}")
+
+    def _create_domain(self, domain_name: str) -> DomainInterface:
+        documents = self._create_documents(domain_name)
+        description = self._get_domain_description(domain_name)
+        return self.domain_factory.create_domain(domain_name, description, documents)
 
     def _create_documents(self, domain_name: str) -> List[DocumentInterface]:
         documents = []
         for doc_name in self.storage.get_collection_items(domain_name):
-            content = self.storage.get_item(domain_name, doc_name)
-            document = self.document_factory.create_document(name=doc_name, collection=domain_name, title=doc_name, content=content)
+            # Create document without content, implement lazy loading
+            document = self.document_factory.create_document(name=doc_name, collection=domain_name, title=doc_name, content=None)
             documents.append(document)
         return documents
 
@@ -57,10 +66,25 @@ class DomainManager(DomainManagerInterface):
         return self.domains[domain_name]
 
     def apply_chunking_strategy(self) -> None:
+        strategy_name = self.chunk_strategy.strategy_name
+        strategy_params = self.chunk_strategy.get_parameters()
+        
+        logger.info(f"Applying chunking strategy: {strategy_name}")
+        logger.info(f"Strategy parameters: {strategy_params}")
+
         for domain in self.domains.values():
+            logger.info(f"Applying chunking strategy to domain: {domain.name}")
             for document in domain.documents:
-                chunks = self.chunk_strategy.chunk_text(document.content)
+                if document.get_content() is None:
+                    content = self.storage.get_item(domain.name, document.name)
+                    document.set_content(content)
+                content = document.get_content()
+                if content is None:
+                    logger.warning(f"Document {document.name} in domain {domain.name} has no content after attempted load")
+                    continue
+                chunks = self.chunk_strategy.chunk_text(content)
                 document.set_chunks(chunks)
+                logger.debug(f"Chunked document {document.name} in domain {domain.name} into {len(chunks)} chunks")
 
     def get_domain_documents(self, domain_name: str) -> List[DocumentInterface]:
         domain = self.get_domain(domain_name)
@@ -70,5 +94,10 @@ class DomainManager(DomainManagerInterface):
         documents = self.get_domain_documents(domain_name)
         for document in documents:
             if document.name == document_name:
+                if document.get_content() is None:
+                    # Lazy load content when needed
+                    logger.debug(f"Lazy loading content for document {document_name} in domain {domain_name}")
+                    content = self.storage.get_item(domain_name, document_name)
+                    document.set_content(content)
                 return document
         raise ValueError(f"Document '{document_name}' not found in domain '{domain_name}'")

@@ -60,14 +60,10 @@ def main():
 
     # Initialize storage
     try:
-        logger.info(f"Attempting to initialize FileStorage with path: {settings.DATA_FOLDER}")
         storage = FileStorage(settings.DATA_FOLDER)
     except (FileNotFoundError, NotADirectoryError) as e:
         logger.error(f"Failed to initialize storage: {e}")
         sys.exit(1)
-
-    # Log successful initialization
-    logger.info("Storage initialized successfully")
 
     # Get and log all collections from Storage
     collections = storage.get_all_collections()
@@ -85,10 +81,11 @@ def main():
 
     # Initialize DomainManager
     logger.info("Initializing DomainManager...")
+
+    start_time = time.time()
     # Initialize domain and document factories
     domain_factory = DomainFactory()
     document_factory = DocumentFactory()
-    start_time = time.time()
     domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory)
     end_time = time.time()
     """
@@ -102,14 +99,6 @@ def main():
     """
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
 
-    # Print domain info
-    logger.info("Domain information:")
-    for domain in domain_manager.get_domains():
-        logger.info(f"  Domain: {domain.name}")
-        logger.info(f"    Description: {domain.description}")
-        logger.info(f"    Number of documents: {len(domain.documents)}")
-        for doc in domain.documents:
-            logger.info(f"      - {doc.name} (Chunks: {len(doc.get_chunks())})")
 
     # Initialize vector stores
     logger.info("Initializing ChromaVectorStores...")
@@ -152,14 +141,9 @@ def main():
     end_time = time.time()
     logger.info(f"Chunking strategy applied in {end_time - start_time:.2f} seconds")
 
-    # Get all domains
-    logger.info("Fetching all domains:")
-    domains = domain_manager.get_domains()
-    for domain in domains:
-        logger.info(f"  - {domain}")
-
     # Get all documents per domain
     logger.info("Fetching documents for each domain:")
+    domains = domain_manager.get_domains()
     for domain in domains:
         documents = domain_manager.get_domain_documents(domain.name)
         logger.info(f"  Domain: {domain.name}")
@@ -167,11 +151,10 @@ def main():
             logger.info(f"    - {doc}")
 
     # Fetch the first document of the first domain and print its chunks
-    if domains and documents:
-        first_domain = domains[0]
-        first_document = first_domain.documents[0]
-        logger.info(f"Fetching chunks for the first document of {first_domain.name}:")
-        document = domain_manager.get_domain_document(first_domain.name, first_document.name)
+    for domain in domains:
+        first_document = domain.documents[0]
+        logger.info(f"Fetching chunks for the first document of {domain.name}:")
+        document = domain_manager.get_domain_document(domain.name, first_document.name)
         chunks = document.get_chunks()
         logger.info(f"  Chunk lenght: {str(len(chunks))}")
         logger.info(f"  Document: {document.name}")

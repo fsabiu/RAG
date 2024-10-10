@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Protocol
+from typing import List, Protocol, Optional
 
 class DocumentInterface(ABC):
     @property
@@ -17,9 +17,12 @@ class DocumentInterface(ABC):
     def title(self) -> str:
         pass
 
-    @property
     @abstractmethod
-    def content(self) -> str:
+    def get_content(self) -> Optional[str]:
+        pass
+
+    @abstractmethod
+    def set_content(self, content: str) -> None:
         pass
 
     @abstractmethod
@@ -39,5 +42,5 @@ class DocumentInterface(ABC):
         pass
 
 class DocumentFactoryInterface(Protocol):
-    def create_document(self, name: str, collection: str, title: str, content: str) -> DocumentInterface:
+    def create_document(self, name: str, collection: str, title: str, content: Optional[str] = None) -> DocumentInterface:
         ...
