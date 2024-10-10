@@ -51,8 +51,9 @@ class FileStorage(StorageInterface):
             for file_name in os.listdir(collection_path):
                 file_path = os.path.join(collection_path, file_name)
                 if os.path.isfile(file_path):
-                    with open(file_path, 'r') as f:
-                        items[file_name] = f.read()
+                    content = self._read_file_content(file_path)
+                    if content is not None:
+                        items[file_name] = content
             logger.debug(f"Retrieved {len(items)} items from collection '{collection_name}'")
         else:
             logger.warning(f"Collection not found: {collection_name}")
@@ -61,25 +62,27 @@ class FileStorage(StorageInterface):
     def get_item(self, collection_name: str, item_name: str) -> Optional[str]:
         file_path = os.path.join(self.base_path, collection_name, item_name)
         if os.path.isfile(file_path):
-            try:
-                _, file_extension = os.path.splitext(item_name)
-                file_extension = file_extension.lower()
-
-                if file_extension in ['.txt', '.md']:
-                    return self._read_text_file(file_path)
-                elif file_extension == '.docx':
-                    return self._read_docx(file_path)
-                elif file_extension == '.pdf':
-                    return self._read_pdf(file_path)
-                else:
-                    logger.warning(f"Unsupported file type: {file_extension}")
-                    return None
-
-            except Exception as e:
-                logger.error(f"Error reading file '{item_name}' from collection '{collection_name}': {e}")
+            return self._read_file_content(file_path)
         else:
             logger.warning(f"Item '{item_name}' not found in collection '{collection_name}'")
         return None
+
+    def _read_file_content(self, file_path: str) -> Optional[str]:
+        _, file_extension = os.path.splitext(file_path)
+        file_extension = file_extension.lower()
+        try:
+            if file_extension in ['.txt', '.md']:
+                return self._read_text_file(file_path)
+            elif file_extension == '.docx':
+                return self._read_docx(file_path)
+            elif file_extension == '.pdf':
+                return self._read_pdf(file_path)
+            else:
+                logger.warning(f"Unsupported file type: {file_extension}")
+                return None
+        except Exception as e:
+            logger.error(f"Error reading file '{file_path}': {e}")
+            return None
 
     def _read_text_file(self, file_path: str) -> str:
         with open(file_path, 'rb') as f:
