@@ -1,6 +1,23 @@
+from typing import Optional, Literal
 from ...interfaces.document_interface import DocumentFactoryInterface, DocumentInterface
-from .document import Document
+from .document import PythonDocument
+from .db_document import DBDocument
+import oracledb
+
+# Define a type for the implementation parameter
+ImplementationType = Literal["OCI_DB", "Python"]
 
 class DocumentFactory(DocumentFactoryInterface):
-    def create_document(self, name: str, collection: str, title: str, content: str) -> DocumentInterface:
-        return Document(name, collection, content)
+    def __init__(self, implementation: ImplementationType = "Python", db_connection: Optional[oracledb.Connection] = None):
+        self.implementation = implementation
+        self.db_connection = db_connection
+
+    def create_document(self, name: str, collection: str, title: str, content: Optional[str] = None) -> DocumentInterface:
+        if self.implementation == "OCI_DB":
+            if not self.db_connection:
+                raise ValueError("Database connection is required for OCI_DB implementation")
+            return DBDocument(name, collection, title, content, self.db_connection)
+        elif self.implementation == "Python":
+            return PythonDocument(name, collection, title, content)
+        else:
+            raise ValueError(f"Invalid implementation: {self.implementation}. Must be either 'OCI_DB' or 'Python'")

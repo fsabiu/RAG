@@ -1,7 +1,7 @@
 from typing import List, Optional
 from ...interfaces.document_interface import DocumentInterface
 
-class Document(DocumentInterface):
+class PythonDocument(DocumentInterface):
     def __init__(self, name: str, collection: str, title: str, content: Optional[str] = None):
         self._name = name
         self._collection = collection
@@ -41,4 +41,4 @@ class Document(DocumentInterface):
         self._chunks = chunks
 
     def __repr__(self):
-        return f"Document(name='{self.name}', collection='{self.collection}', title='{self.title}', keywords={len(self._keywords)}, chunks={len(self._chunks)})"
+        return f"PythonDocument(name='{self.name}', collection='{self.collection}', title='{self.title}', keywords={len(self._keywords)}, chunks={len(self._chunks)})"

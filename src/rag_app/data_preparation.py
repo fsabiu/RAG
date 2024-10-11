@@ -11,7 +11,18 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from rag_app.config import settings
 
 # Import necessary interfaces and implementations
-# ... (import statements from the original file)
+from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus
+from rag_app.core.implementations.chunk_strategy.fixed_size_strategy import FixedSizeChunkStrategy
+from rag_app.core.implementations.chunk_strategy.semantic_strategy import SemanticChunkStrategy
+from rag_app.core.implementations.document.document_factory import DocumentFactory
+from rag_app.core.implementations.domain.domain_factory import DomainFactory
+from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
+from rag_app.core.implementations.embedding_model.embedding_model import CohereEmbedding
+from rag_app.core.implementations.query_engine.query_engine import QueryEngine
+from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
+from rag_app.core.implementations.reranker.reranker import ResultReRanker
+from rag_app.core.implementations.storage.file_storage import FileStorage
+from rag_app.core.implementations.vector_store.vector_store import ChromaVectorStore
 
 load_dotenv()
 
@@ -22,7 +33,11 @@ logger = logging.getLogger(__name__)
 logging.getLogger('cohere').setLevel(logging.WARNING)
 
 # Suppress unwanted logs
-# ... (logging configurations from the original file)
+logging.getLogger('botocore').setLevel(logging.ERROR)
+logging.getLogger('boto3').setLevel(logging.ERROR)
+logging.getLogger('urllib3').setLevel(logging.ERROR)
+logging.getLogger('posthog').setLevel(logging.ERROR)
+logging.getLogger('sagemaker').setLevel(logging.ERROR)
 
 def get_chat_model():
     if settings.chat_model.PROVIDER == "oci":
@@ -40,7 +55,7 @@ def get_chunk_strategy(embedding_model):
     if settings.chunking.STRATEGY == "semantic":
         return SemanticChunkStrategy(max_chunk_size=settings.chunking.CHUNK_SIZE, embedding_model=embedding_model)
     elif settings.chunking.STRATEGY == "fixed":
-        return FixedChunkStrategy(chunk_size=settings.chunking.CHUNK_SIZE, chunk_overlap=settings.chunking.CHUNK_OVERLAP)
+        return FixedSizeChunkStrategy(chunk_size=settings.chunking.CHUNK_SIZE, overlap=settings.chunking.CHUNK_OVERLAP)
     raise ValueError(f"Unsupported chunking strategy: {settings.chunking.STRATEGY}")
 
 def get_vector_store(collection_name):
@@ -61,14 +76,7 @@ def prepare_data():
     document_factory = DocumentFactory()
 
     # Initialize DomainManager
-    domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory)
-
-    # Apply chunking strategy
-    logger.info("Applying chunking strategy...")
-    start_time = time.time()
-    domain_manager.apply_chunking_strategy()
-    end_time = time.time()
-    logger.info(f"Chunking strategy applied in {end_time - start_time:.2f} seconds")
+    domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory, embedding_model=embedding_model)
 
     # Initialize VectorStores
     vector_stores = {}
@@ -81,6 +89,13 @@ def prepare_data():
         except Exception as e:
             logger.error(f"Failed to create VectorStore for collection '{collection_name}': {str(e)}")
             continue
+
+    # Apply chunking strategy and store embeddings
+    logger.info("Applying chunking strategy and storing embeddings...")
+    start_time = time.time()
+    domain_manager.apply_chunking_strategy()
+    end_time = time.time()
+    logger.info(f"Chunking strategy applied and embeddings stored in {end_time - start_time:.2f} seconds")
 
     # Create QueryEngine
     query_engine = QueryEngine(

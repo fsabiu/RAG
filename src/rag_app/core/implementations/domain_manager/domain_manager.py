@@ -7,16 +7,18 @@ from ...interfaces.document_interface import DocumentInterface
 from ...interfaces.storage_interface import StorageInterface
 from ...interfaces.chunk_strategy_interface import ChunkStrategyInterface
 from ...interfaces.chat_model_interface import ChatModelInterface
+from ...interfaces.vector_store_interface import VectorStoreInterface
 from ..document.document import Document
 from ..domain.domain import Domain
 
 logger = logging.getLogger(__name__)
 
 class DomainManager(DomainManagerInterface):
-    def __init__(self, storage, chunk_strategy, chat_model, domain_factory, document_factory):
+    def __init__(self, storage, chunk_strategy, chat_model, domain_factory, document_factory, vector_store: VectorStoreInterface):
         self.storage = storage
         self.chunk_strategy = chunk_strategy
         self.chat_model = chat_model
+        self.vector_store = vector_store
         self.domain_factory = domain_factory
         self.document_factory = document_factory
         self.domains: Dict[str, DomainInterface] = {}
@@ -85,6 +87,34 @@ class DomainManager(DomainManagerInterface):
                 chunks = self.chunk_strategy.chunk_text(content)
                 document.set_chunks(chunks)
                 logger.debug(f"Chunked document {document.name} in domain {domain.name} into {len(chunks)} chunks")
+                
+                # Store embeddings and clear chunks from memory
+                self.store_embedded_documents(domain.name, document)
+                document.set_chunks([])  # Clear chunks from memory
+                document.set_content(None)  # Clear content from memory
+
+    def store_embedded_documents(self, domain_name: str, document: DocumentInterface) -> None:
+        logger.info(f"Storing embedded documents for {document.name} in domain {domain_name}")
+        chunks = document.get_chunks()
+        embeddings = []
+        metadata = []
+        ids = []
+        documents = []
+        
+        for i, chunk in enumerate(chunks):
+            embedding = self.chat_model.get_embedding(chunk)
+            embeddings.append(embedding)
+            metadata.append({
+                "domain": domain_name,
+                "document": document.name,
+                "chunk_index": i
+            })
+            ids.append(f"{domain_name}_{document.name}_{i}")
+            documents.append(chunk)
+        
+        # Store the embedded chunks in the vector store
+        self.vector_store.store_embeddings(embeddings, metadata, ids, documents)
+        logger.debug(f"Stored {len(embeddings)} embedded chunks for document {document.name} in domain {domain_name}")
 
     def get_domain_documents(self, domain_name: str) -> List[DocumentInterface]:
         domain = self.get_domain(domain_name)
