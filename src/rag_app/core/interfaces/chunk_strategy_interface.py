@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
+from src.rag_app.core.interfaces.document_interface import Chunk
 
 class ChunkStrategyInterface(ABC):
     @property
@@ -12,5 +13,5 @@ class ChunkStrategyInterface(ABC):
         pass
 
     @abstractmethod
-    def chunk_text(self, content: str) -> List[str]:
+    def chunk_text(self, content: str, document_id: str) -> List[Chunk]:
         pass

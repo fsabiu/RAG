@@ -1,7 +1,7 @@
 import os
 from pydantic_settings import BaseSettings
 from pydantic import BaseModel
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 class ChunkingSettings(BaseModel):
     STRATEGY: str = "fixed"  # Options: "semantic", "fixed"
@@ -35,6 +35,10 @@ class QueryEngineSettings(BaseModel):
     USE_QUERY_OPTIMIZER: bool = True
     USE_RESULT_RE_RANKER: bool = True
 
+class DocumentSettings(BaseModel):
+    IMPLEMENTATION: str = "Python"  # Options: "OCI_DB", "Python"
+    DB_CONNECTION_STRING: Optional[str] = None  # Required if IMPLEMENTATION is "OCI_DB"
+
 class Settings(BaseSettings):
     APP_NAME: str = "RAG Application"
     APP_VERSION: str = "0.1.0"
@@ -51,6 +55,7 @@ class Settings(BaseSettings):
     embedding_model: EmbeddingModelSettings = EmbeddingModelSettings()
     vector_store: VectorStoreSettings = VectorStoreSettings()
     query_engine: QueryEngineSettings = QueryEngineSettings()
+    document: DocumentSettings = DocumentSettings()
 
     class Config:
         env_file = ".env"

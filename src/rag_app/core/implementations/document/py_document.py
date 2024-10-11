@@ -1,14 +1,20 @@
-from typing import List, Optional
-from ...interfaces.document_interface import DocumentInterface
+from typing import List, Optional, Dict
+from ...interfaces.document_interface import DocumentInterface, Chunk
+import uuid
 
 class PythonDocument(DocumentInterface):
-    def __init__(self, name: str, collection: str, title: str, content: Optional[str] = None):
+    def __init__(self, id: str, name: str, collection: str, title: str, content: Optional[str] = None):
+        self._id = id
         self._name = name
         self._collection = collection
         self._title = title
         self._content = content
         self._keywords: List[str] = []
-        self._chunks: List[str] = []
+        self._chunks: List[Chunk] = []
+
+    @property
+    def id(self) -> str:
+        return self._id
 
     @property
     def name(self) -> str:
@@ -22,23 +28,29 @@ class PythonDocument(DocumentInterface):
     def title(self) -> str:
         return self._title
 
-    def get_content(self) -> Optional[str]:
+    @property
+    def content(self) -> Optional[str]:
         return self._content
 
-    def set_content(self, content: str) -> None:
-        self._content = content
+    @content.setter
+    def content(self, value: str) -> None:
+        self._content = value
 
-    def get_keywords(self) -> List[str]:
+    @property
+    def keywords(self) -> List[str]:
         return self._keywords
 
-    def set_keywords(self, keywords: List[str]) -> None:
-        self._keywords = keywords
+    @keywords.setter
+    def keywords(self, value: List[str]) -> None:
+        self._keywords = value
 
-    def get_chunks(self) -> List[str]:
+    @property
+    def chunks(self) -> List[Chunk]:
         return self._chunks
 
-    def set_chunks(self, chunks: List[str]) -> None:
-        self._chunks = chunks
+    @chunks.setter
+    def chunks(self, value: List[Chunk]) -> None:
+        self._chunks = [Chunk(chunk.document_id, chunk.chunk_id, {**chunk.metadata, 'document_name': self._name}, chunk.content) for chunk in value]
 
     def __repr__(self):
-        return f"PythonDocument(name='{self.name}', collection='{self.collection}', title='{self.title}', keywords={len(self._keywords)}, chunks={len(self._chunks)})"
+        return f"PythonDocument(id='{self.id}', name='{self.name}', collection='{self.collection}', title='{self.title}', keywords={len(self._keywords)}, chunks={len(self._chunks)})"

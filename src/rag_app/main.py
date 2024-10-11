@@ -30,7 +30,7 @@ from rag_app.core.implementations.chunk_strategy.semantic_strategy import Semant
 from rag_app.core.implementations.document.document_factory import DocumentFactory
 from rag_app.core.implementations.domain.domain_factory import DomainFactory
 from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
-from rag_app.core.implementations.embedding_model.embedding_model import CohereEmbedding
+from rag_app.core.implementations.embedding_model.cohere_embedding import CohereEmbedding
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
 from rag_app.core.implementations.reranker.reranker import ResultReRanker
@@ -73,7 +73,6 @@ def main():
         logger.error(f"Failed to initialize storage: {e}")
         sys.exit(1)
 
-
     collections = storage.get_all_collections()
     logger.info(f"Found {len(collections)} collections:")
     for collection in collections:
@@ -88,19 +87,56 @@ def main():
         sys.exit(1)
         
     logger.info("Initializing chunking strategy...")
-    #chunk_strategy = FixedSizeChunkStrategy(chunk_size=1000, overlap=200)
-    chunk_strategy = SemanticChunkStrategy(max_chunk_size=1000, embedding_model=embedding_model)
+    if settings.chunking.STRATEGY == "fixed":
+        chunk_strategy = FixedSizeChunkStrategy(
+            chunk_size=settings.chunking.CHUNK_SIZE,
+            overlap=settings.chunking.CHUNK_OVERLAP
+        )
+        logger.info(f"Using FixedSizeChunkStrategy with chunk size {settings.chunking.CHUNK_SIZE} and overlap {settings.chunking.CHUNK_OVERLAP}")
+    elif settings.chunking.STRATEGY == "semantic":
+        chunk_strategy = SemanticChunkStrategy(
+            max_chunk_size=settings.chunking.CHUNK_SIZE,
+            embedding_model=embedding_model
+        )
+        logger.info(f"Using SemanticChunkStrategy with max chunk size {settings.chunking.CHUNK_SIZE}")
+    else:
+        logger.error(f"Invalid chunking strategy: {settings.chunking.STRATEGY}")
+        sys.exit(1)
 
-    domain_factory = DomainFactory()
-    document_factory = DocumentFactory()
+    logger.info("Initializing document factory...")
+    document_factory = DocumentFactory(settings.document.IMPLEMENTATION)
+    logger.info(f"Document factory initialized with {settings.document.IMPLEMENTATION} implementation")
 
-    logger.info("Initializing DomainManager...")
-    start_time = time.time()
     # Initialize domain and document factories
     domain_factory = DomainFactory()
     document_factory = DocumentFactory()
-    domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory)
+
+    logger.info("Initializing ChromaVectorStores...")
+    vector_stores = {}
+        
+    logger.info("Initializing DomainManager...")
+    start_time = time.time()
+    domain_manager = DomainManager(
+        storage=storage,
+        chunk_strategy=chunk_strategy,
+        chat_model=chat_model,
+        domain_factory=domain_factory,
+        document_factory=document_factory,
+        vector_stores=vector_stores,
+        embedding_model=embedding_model
+    )
     end_time = time.time()
+
+    for domain in domain_manager.get_domains():
+        collection_name = f"{domain.name.lower().replace(' ', '_')}"
+        try:
+            vector_store = ChromaVectorStore(collection_name=collection_name, persist_directory="./chroma_db")
+            vector_stores[domain.name] = vector_store
+            logger.info(f"Created ChromaVectorStore for collection: {collection_name}")
+        except Exception as e:
+            logger.error(f"Failed to create ChromaVectorStore for collection '{collection_name}': {str(e)}")
+            # Continue with the next domain instead of exiting
+            continue
     """
     Domain manager will have:
     - Storage
@@ -112,18 +148,6 @@ def main():
     """
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
 
-    logger.info("Initializing ChromaVectorStores...")
-    vector_stores = {}
-    for domain in domain_manager.get_domains():
-        collection_name = f"{domain.name.lower().replace(' ', '_')}"
-        try:
-            vector_store = ChromaVectorStore(collection_name=collection_name, persist_directory="./chroma_db")
-            vector_stores[domain.name] = vector_store
-            logger.info(f"Created ChromaVectorStore for collection: {collection_name}")
-        except Exception as e:
-            logger.error(f"Failed to create ChromaVectorStore for collection '{collection_name}': {str(e)}")
-            # Continue with the next domain instead of exiting
-            continue
 
     query_engine = QueryEngine(
         domain_manager=domain_manager,

@@ -9,6 +9,9 @@ oci
 langchain-community
 pydantic-settings
 
+# Database
+oracledb
+
 # File handling
 python-docx
 PyPDF2

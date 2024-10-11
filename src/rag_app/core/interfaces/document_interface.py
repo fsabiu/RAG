@@ -1,7 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import List, Protocol, Optional
+from typing import List, Protocol, Optional, Dict
+
+class Chunk:
+    def __init__(self, document_id: str, chunk_id: str, metadata: Dict[str, any], content: str):
+        self.document_id = document_id
+        self.chunk_id = chunk_id
+        self.metadata = metadata
+        self.content = content
+        self.document_name = metadata.get('document_name', '')  # Add this line
 
 class DocumentInterface(ABC):
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        pass
+
     @property
     @abstractmethod
     def name(self) -> str:
@@ -17,28 +30,44 @@ class DocumentInterface(ABC):
     def title(self) -> str:
         pass
 
+    @property
     @abstractmethod
-    def get_content(self) -> Optional[str]:
+    def content(self) -> Optional[str]:
         pass
 
+    @content.setter
     @abstractmethod
-    def set_content(self, content: str) -> None:
+    def content(self, value: str) -> None:
         pass
 
+    @property
     @abstractmethod
-    def get_keywords(self) -> List[str]:
+    def keywords(self) -> List[str]:
         pass
 
+    @keywords.setter
     @abstractmethod
-    def set_keywords(self, keywords: List[str]) -> None:
+    def keywords(self, value: List[str]) -> None:
         pass
 
+    @property
     @abstractmethod
-    def get_chunks(self) -> List[str]:
+    def chunks(self) -> List[Chunk]:
         pass
 
+    @chunks.setter
     @abstractmethod
-    def set_chunks(self, chunks: List[str]) -> None:
+    def chunks(self, value: List[Chunk]) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
         pass
 
 class DocumentFactoryInterface(Protocol):

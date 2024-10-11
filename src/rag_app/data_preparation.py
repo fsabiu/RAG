@@ -17,7 +17,7 @@ from rag_app.core.implementations.chunk_strategy.semantic_strategy import Semant
 from rag_app.core.implementations.document.document_factory import DocumentFactory
 from rag_app.core.implementations.domain.domain_factory import DomainFactory
 from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
-from rag_app.core.implementations.embedding_model.embedding_model import CohereEmbedding
+from rag_app.core.implementations.embedding_model.cohere_embedding import CohereEmbedding
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
 from rag_app.core.implementations.reranker.reranker import ResultReRanker
@@ -73,7 +73,10 @@ def prepare_data():
     embedding_model = get_embedding_model()
     chunk_strategy = get_chunk_strategy(embedding_model)
     domain_factory = DomainFactory()
-    document_factory = DocumentFactory()
+
+    # Initialize document factory
+    document_factory = DocumentFactory(settings.document.IMPLEMENTATION)
+    logger.info(f"Document factory initialized with {settings.document.IMPLEMENTATION} implementation")
 
     # Initialize DomainManager
     domain_manager = DomainManager(storage, chunk_strategy, chat_model, domain_factory, document_factory, embedding_model=embedding_model)

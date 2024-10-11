@@ -1,6 +1,7 @@
 from typing import List, Dict
 import logging
 from src.rag_app.core.interfaces.chunk_strategy_interface import ChunkStrategyInterface
+from src.rag_app.core.interfaces.document_interface import Chunk
 
 logger = logging.getLogger(__name__)
 
@@ -20,20 +21,28 @@ class FixedSizeChunkStrategy(ChunkStrategyInterface):
             "overlap": self.overlap
         }
 
-    def chunk_text(self, content: str) -> List[str]:
+    def chunk_text(self, content: str, document_id: str) -> List[Chunk]:
         if content is None:
-            print("Warning: Received None content in chunk_text method")
-            return []  # or handle this case appropriately
+            logger.warning("Received None content in chunk_text method")
+            return []
         
         chunks = []
         start = 0
         content_length = len(content)
+        chunk_id = 0
 
         while start < content_length:
             end = start + self.chunk_size
-            chunk = content[start:end]
+            chunk_content = content[start:end]
+            chunk = Chunk(
+                document_id=document_id,
+                chunk_id=f"{document_id}_chunk_{chunk_id}",
+                metadata={"start": start, "end": end},
+                content=chunk_content
+            )
             chunks.append(chunk)
             
             start = end - self.overlap
+            chunk_id += 1
             
         return chunks
