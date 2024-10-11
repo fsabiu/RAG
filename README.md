@@ -10,6 +10,7 @@
 ![OCI GenAI](https://img.shields.io/badge/ChatModel-OCI%20GenAI-red)
 ![Oracle DB](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![LLM Support](https://img.shields.io/badge/LLM%20Support-Cohere%20%7C%20Custom-green)
+![Embedding Models](https://img.shields.io/badge/Embedding%20Models-Ollama%20%7C%20Cohere-purple)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </p>
@@ -24,6 +25,7 @@ This is a sophisticated Retrieval-Augmented Generation (RAG) application leverag
 - Flexible document and domain management
 - Customizable query engine with optimization and re-ranking capabilities
 - Vector store integration for efficient similarity search
+- Support for Ollama and Cohere embedding models
 
 ## Architecture Overview
 
@@ -44,6 +46,7 @@ The diagram illustrates the main components and workflow of the system:
 3. **Embedding and Vector Store**:
    - The embeddings are stored in a Semantic Index, implemented via the `VectorStoreInterface`.
    - This process is facilitated by an Embedding model, defined by the `EmbeddingModelInterface`.
+   - Supported embedding models include Ollama and Cohere.
 
 4. **Query Engine**:
    - When a question is received, it goes through query optimization (`QueryOptimizerInterface`).
