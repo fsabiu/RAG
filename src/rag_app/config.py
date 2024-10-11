@@ -23,9 +23,11 @@ class ChatModelSettings(BaseModel):
     OCI_DEFAULT_MODEL: str = "cohere.command-r-plus"
 
 class EmbeddingModelSettings(BaseModel):
-    PROVIDER: str = "cohere"  # Options: "cohere", "openai"
-    MODEL_NAME: str = "embed-english-v3.0"
-    EMBEDDING_DIMENSION: int = 1024  # Updated for Cohere's model
+    PROVIDER: str = "cohere"  # Options: "cohere", "ollama"
+    MODEL_NAME: str = "embed-english-v3.0" # Options: "embed-english-v3.0" for cohere, "mxbai-embed-large" for ollama
+    EMBEDDING_DIMENSION: int = 1024 
+    OLLAMA_HOST: str = "localhost"  # Default to localhost
+    OLLAMA_PORT: int = 11434  # Default Ollama port
 
 class VectorStoreSettings(BaseModel):
     PROVIDER: str = "chroma"  # Options: "chroma", "pinecone", "faiss"

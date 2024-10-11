@@ -31,6 +31,7 @@ from rag_app.core.implementations.document.document_factory import DocumentFacto
 from rag_app.core.implementations.domain.domain_factory import DomainFactory
 from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
 from rag_app.core.implementations.embedding_model.cohere_embedding import CohereEmbedding
+from rag_app.core.implementations.embedding_model.ollama_embedding import OllamaEmbedding
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
 from rag_app.core.implementations.reranker.reranker import ResultReRanker
@@ -78,12 +79,22 @@ def main():
     for collection in collections:
         logger.info(f"  - {collection}")
 
-    logger.info("Initializing CohereEmbedding model...")
+    logger.info("Initializing embedding model...")
     try:
-        embedding_model = CohereEmbedding(model_name="embed-english-v3.0")
-        logger.info("CohereEmbedding model initialized successfully")
-    except ValueError as e:
-        logger.error(f"Failed to initialize CohereEmbedding model: {str(e)}")
+        if settings.embedding_model.PROVIDER.lower() == "cohere":
+            embedding_model = CohereEmbedding(model_name=settings.embedding_model.MODEL_NAME)
+            logger.info(f"CohereEmbedding model '{settings.embedding_model.MODEL_NAME}' initialized successfully")
+        elif settings.embedding_model.PROVIDER.lower() == "ollama":
+            embedding_model = OllamaEmbedding(
+                model_name=settings.embedding_model.MODEL_NAME,
+                ollama_host=settings.embedding_model.OLLAMA_HOST,
+                ollama_port=settings.embedding_model.OLLAMA_PORT
+            )
+            logger.info(f"OllamaEmbedding model '{settings.embedding_model.MODEL_NAME}' initialized successfully with URL: {ollama_url}")
+        else:
+            raise ValueError(f"Unsupported embedding model provider: {settings.embedding_model.PROVIDER}")
+    except Exception as e:
+        logger.error(f"Failed to initialize embedding model: {str(e)}")
         sys.exit(1)
         
     logger.info("Initializing chunking strategy...")
