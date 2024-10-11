@@ -179,7 +179,7 @@ def main():
         first_document = domain.documents[0]
         logger.info(f"Fetching chunks for the first document of {domain.name}:")
         document = domain_manager.get_domain_document(domain.name, first_document.name)
-        chunks = document.get_chunks()
+        chunks = document.chunks
         logger.info(f"  Chunk lenght: {str(len(chunks))}")
         logger.info(f"  Document: {document.name}")
         logger.info(f"  Number of chunks: {len(chunks)}")

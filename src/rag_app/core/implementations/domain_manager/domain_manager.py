@@ -1,4 +1,6 @@
 import logging
+import json
+import os
 from typing import Dict, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ...interfaces.domain_manager_interface import DomainManagerInterface
@@ -10,6 +12,7 @@ from ...interfaces.chat_model_interface import ChatModelInterface
 from ...interfaces.vector_store_interface import VectorStoreInterface
 from ...interfaces.embedding_model_interface import EmbeddingModelInterface
 from ..domain.domain import Domain
+from ....config import settings  # Import settings from config
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +102,7 @@ class DomainManager(DomainManagerInterface):
                 if content is None:
                     logger.warning(f"Document {document.name} in domain {domain.name} has no content after attempted load")
                     continue
-                # Use document.id
+                # Chunking text
                 chunks = self.chunk_strategy.chunk_text(content=content, document_id=document.id)
                 # Add document_name to each chunk's metadata
                 for chunk in chunks:
@@ -109,9 +112,43 @@ class DomainManager(DomainManagerInterface):
                 logger.debug(f"Chunked document {document.name} (ID: {document.id}) in domain {domain.name} into {len(chunks)} chunks")
                 
                 # Store embeddings and clear chunks from memory
-                self.embed_and_store_documents(domain.name, document)
+                #self.embed_and_store_documents(domain.name, document)
+                
+                # Store chunks in JSON file
+                self.store_chunks(domain.name, document)
+                
                 document.chunks = []  # Clear chunks from memory
                 document.content = None  # Clear content from memory
+
+    def store_chunks(self, domain_name: str, document: DocumentInterface) -> None:
+        strategy_name = self.chunk_strategy.strategy_name
+        data_path = settings.DATA_FOLDER  # Use DATA_FOLDER from settings
+        chunks_dir = os.path.join(data_path, 'chunks', f"{domain_name}_{strategy_name}")
+        
+        # Create directory if it doesn't exist
+        os.makedirs(chunks_dir, exist_ok=True)
+        
+        # Create JSON file for the document
+        file_name = f"{document.name}.json"
+        file_path = os.path.join(chunks_dir, file_name)
+        
+        # Prepare chunks data for JSON serialization
+        chunks_data = [
+            {
+                'chunk_id': chunk.chunk_id,
+                'content': chunk.content,
+                'metadata': chunk.metadata
+            }
+            for chunk in document.chunks
+        ]
+        
+        # Write chunks to JSON file
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(chunks_data, f, ensure_ascii=False, indent=2)
+            logger.info(f"Successfully stored chunks for document {document.name} in {file_path}")
+        except Exception as e:
+            logger.error(f"Error storing chunks for document {document.name} in {file_path}: {str(e)}")
 
     def embed_and_store_documents(self, domain_name: str, document: DocumentInterface) -> None:
         vector_store = self.vector_stores.get(domain_name)

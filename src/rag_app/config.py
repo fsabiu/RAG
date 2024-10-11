@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Dict, List, Optional
 
 class ChunkingSettings(BaseModel):
-    STRATEGY: str = "fixed"  # Options: "semantic", "fixed"
+    STRATEGY: str = "semantic"  # Options: "semantic", "fixed"
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
 
