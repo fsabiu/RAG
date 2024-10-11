@@ -11,6 +11,53 @@ This is a sophisticated Retrieval-Augmented Generation (RAG) application leverag
 - Customizable query engine with optimization and re-ranking capabilities
 - Vector store integration for efficient similarity search
 
+## Architecture Overview
+
+The application is built on a set of abstract interfaces, promoting loose coupling and easier testing. Below is a high-level architecture diagram of the RAG Application:
+
+![RAG Application Architecture](docs/architecture_diagram.png)
+
+*Figure 1: High-level architecture diagram of the RAG Application*
+
+The diagram illustrates the main components and workflow of the system:
+
+1. **Documents**: The process begins with raw documents and database entries.
+
+2. **Chunks**: 
+   - Documents are split into smaller chunks using the `ChunkStrategyInterface`.
+   - These chunks are then processed to create embeddings using the `EmbeddingModelInterface`.
+
+3. **Embedding and Vector Store**:
+   - The embeddings are stored in a Semantic Index, implemented via the `VectorStoreInterface`.
+   - This process is facilitated by an Embedding model, defined by the `EmbeddingModelInterface`.
+
+4. **Query Engine**:
+   - When a question is received, it goes through query optimization (`QueryOptimizerInterface`).
+   - The optimized query is used for semantic search in the Vector Store.
+   - Top N documents are retrieved and undergo context re-ranking (`ReRankerInterface`).
+
+5. **Generation**:
+   - The re-ranked context, along with the original question, is sent to the chat model (`ChatModelInterface`).
+   - The chat model generates the final response.
+
+Throughout this process, the `DomainManagerInterface` orchestrates the document and domain management, while the `QueryEngineInterface` handles the core question-answering functionality.
+
+The application uses the following key interfaces:
+
+- `ChatModelInterface`: Handles the final response generation
+- `ChunkStrategyInterface`: Manages the document splitting process
+- `DocumentInterface` and `DocumentFactoryInterface`: Represent and create document objects
+- `DomainInterface` and `DomainFactoryInterface`: Manage domain-specific information
+- `DomainManagerInterface`: Orchestrates overall document and domain management
+- `EmbeddingModelInterface`: Generates embeddings for chunks and queries
+- `QueryEngineInterface`: Coordinates the question-answering process
+- `QueryOptimizerInterface`: Optimizes incoming queries
+- `ReRankerInterface`: Re-ranks retrieved documents for relevance
+- `StorageInterface`: Manages raw document storage and retrieval
+- `VectorStoreInterface`: Handles storage and querying of vector embeddings
+
+This architecture ensures a modular and extensible system, where each component can be independently developed, tested, and optimized.
+
 ## Requirements
 
 - Python 3.10+
@@ -44,36 +91,6 @@ This is a sophisticated Retrieval-Augmented Generation (RAG) application leverag
    ```
    python src/rag_app/main.py
    ```
-
-## Architecture Overview
-
-The application is built on a set of abstract interfaces, promoting loose coupling and easier testing. Below is a high-level architecture diagram of the RAG Application:
-
-![RAG Application Architecture](docs/architecture_diagram.png)
-
-*Figure 1: High-level architecture diagram of the RAG Application*
-
-The diagram illustrates the main components of the system and their interactions:
-
-1. The FastAPI application serves as the entry point, handling HTTP requests.
-2. The Query Engine orchestrates the question-answering process.
-3. The Domain Manager handles document and domain management.
-4. Various models (Chat Model, Embedding Model) and stores (Vector Store) provide core functionalities.
-5. The system integrates with external services like OCI GenAI and Oracle Database 23ai.
-
-The application uses the following key interfaces:
-
-- `ChatModelInterface`: Defines the contract for chat model implementations
-- `ChunkStrategyInterface`: Abstracts different text chunking strategies
-- `DocumentInterface` and `DocumentFactoryInterface`: Handle document representation and creation
-- `DomainInterface` and `DomainFactoryInterface`: Manage domain-specific information and creation
-- `DomainManagerInterface`: Orchestrates domain and document management
-- `EmbeddingModelInterface`: Defines methods for generating and comparing embeddings
-- `QueryEngineInterface`: Handles the core question-answering functionality
-- `QueryOptimizerInterface`: Allows for query optimization implementations
-- `ReRankerInterface`: Provides an interface for re-ranking search results
-- `StorageInterface`: Abstracts storage operations for collections and items
-- `VectorStoreInterface`: Defines methods for storing and querying vector embeddings
 
 ## Usage
 
