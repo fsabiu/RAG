@@ -6,6 +6,8 @@ from ...interfaces.embedding_model_interface import EmbeddingModelInterface
 
 logger = logging.getLogger(__name__)
 
+# https://github.com/ollama/ollama/blob/main/docs/faq.md
+# Add Environment=OLLAMA_HOST=0.0.0.0:11434 to /etc/systemd/system/ollama.service 
 class OllamaEmbedding(EmbeddingModelInterface):
     def __init__(self, model_name: str, ollama_host: str = "localhost", ollama_port: int = 11434):
         self._model_name = model_name
@@ -40,6 +42,9 @@ class OllamaEmbedding(EmbeddingModelInterface):
                 all_embeddings.append(embedding)
             except requests.RequestException as e:
                 logger.error(f"Error generating embedding: {str(e)}")
+                raise
+            except KeyError as e:
+                logger.error(f"Unexpected response structure: {str(e)}")
                 raise
         
         return all_embeddings[0] if len(all_embeddings) == 1 else all_embeddings

@@ -85,6 +85,8 @@ def main():
             embedding_model = CohereEmbedding(model_name=settings.embedding_model.MODEL_NAME)
             logger.info(f"CohereEmbedding model '{settings.embedding_model.MODEL_NAME}' initialized successfully")
         elif settings.embedding_model.PROVIDER.lower() == "ollama":
+            ollama_url = f"http://{settings.embedding_model.OLLAMA_HOST}:{settings.embedding_model.OLLAMA_PORT}"
+            
             embedding_model = OllamaEmbedding(
                 model_name=settings.embedding_model.MODEL_NAME,
                 ollama_host=settings.embedding_model.OLLAMA_HOST,
@@ -184,18 +186,6 @@ def main():
         logger.info(f"  Domain: {domain.name}")
         for doc in documents:
             logger.info(f"    - {doc}")
-
-    # Fetch the first document of the first domain and print its chunks
-    for domain in domains:
-        first_document = domain.documents[0]
-        logger.info(f"Fetching chunks for the first document of {domain.name}:")
-        document = domain_manager.get_domain_document(domain.name, first_document.name)
-        chunks = document.chunks
-        logger.info(f"  Chunk lenght: {str(len(chunks))}")
-        logger.info(f"  Document: {document.name}")
-        logger.info(f"  Number of chunks: {len(chunks)}")
-        for i, chunk in enumerate(chunks[:5], 1):  # Print first 5 chunks
-            logger.info(f"    Chunk {i}: {chunk[:100]}...")  # Print first 100 characters of each chunk
 
     """
     # Perform offline initializations
