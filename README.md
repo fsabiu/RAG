@@ -1,10 +1,18 @@
 # RAG Application
 
+<p align="center">
+  <img src="docs/oracle_logo.png" alt="Oracle Logo" width="300"/>
+</p>
+
+<p align="center">
+
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![OCI GenAI](https://img.shields.io/badge/ChatModel-OCI%20GenAI-red)
 ![Oracle DB](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![LLM Support](https://img.shields.io/badge/LLM%20Support-Cohere%20%7C%20Custom-green)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
+
+</p>
 
 This is a sophisticated Retrieval-Augmented Generation (RAG) application leveraging FastAPI, OCI GenAI, and Oracle Database 23ai. The application is designed with a modular architecture, emphasizing clean abstractions and separation of concerns, with support for Cohere and custom LLMs.
 
