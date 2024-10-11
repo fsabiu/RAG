@@ -47,7 +47,21 @@ This is a sophisticated Retrieval-Augmented Generation (RAG) application leverag
 
 ## Architecture Overview
 
-The application is built on a set of abstract interfaces, promoting loose coupling and easier testing:
+The application is built on a set of abstract interfaces, promoting loose coupling and easier testing. Below is a high-level architecture diagram of the RAG Application:
+
+![RAG Application Architecture](docs/architecture_diagram.png)
+
+*Figure 1: High-level architecture diagram of the RAG Application*
+
+The diagram illustrates the main components of the system and their interactions:
+
+1. The FastAPI application serves as the entry point, handling HTTP requests.
+2. The Query Engine orchestrates the question-answering process.
+3. The Domain Manager handles document and domain management.
+4. Various models (Chat Model, Embedding Model) and stores (Vector Store) provide core functionalities.
+5. The system integrates with external services like OCI GenAI and Oracle Database 23ai.
+
+The application uses the following key interfaces:
 
 - `ChatModelInterface`: Defines the contract for chat model implementations
 - `ChunkStrategyInterface`: Abstracts different text chunking strategies
