@@ -101,10 +101,12 @@ The application exposes a `/ask` endpoint that accepts POST requests with a ques
 To run tests:
 ```
 pytest tests/
+```
 
 To build the Docker image:
 ```
 docker build -t rag-app .
+```
 
 ## Contributing
 
