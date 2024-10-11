@@ -4,26 +4,36 @@ from pydantic import BaseModel
 from typing import Dict, List
 
 class ChunkingSettings(BaseModel):
+    STRATEGY: str = "semantic"  # Options: "semantic", "fixed"
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
 
 class ChatModelSettings(BaseModel):
-    MODEL_ID: str = "cohere.command-r-plus"  # Changed from "cohere.command-r-plus"
-    TEMPERATURE: float = 0.0  # Changed from 0.1
-    MAX_TOKENS: int = 4000  # Changed from 1000
-    TOP_P: float = 0.75  # Added this setting
+    PROVIDER: str = "oci"  # Options: "oci", "openai", "cohere"
+    MODEL_ID: str = "cohere.command-r-plus"
+    TEMPERATURE: float = 0.0
+    MAX_TOKENS: int = 4000
+    TOP_P: float = 0.75
 
     # OCI settings
     OCI_COMPARTMENT_ID: str = "ocid1.compartment.oc1..aaaaaaaaq3jw5diyfz3ykg5ow76q6nvslelmx75nlg55xzdhfuzbikq77nda"
     OCI_GENAI_ENDPOINT: str = "https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com"
     OCI_CONFIG_PROFILE: str = "IDIKA"
     OCI_CONFIG_PATH: str = "~/.oci/config"
-    OCI_DEFAULT_MODEL: str = "cohere.command-r-plus"  # Changed from "oci-command-r-plus"
+    OCI_DEFAULT_MODEL: str = "cohere.command-r-plus"
 
 class EmbeddingModelSettings(BaseModel):
-    MODEL_NAME: str = "text-embedding-ada-002"
-    EMBEDDING_DIMENSION: int = 1536
+    PROVIDER: str = "cohere"  # Options: "cohere", "openai"
+    MODEL_NAME: str = "embed-english-v3.0"
+    EMBEDDING_DIMENSION: int = 1024  # Updated for Cohere's model
 
+class VectorStoreSettings(BaseModel):
+    PROVIDER: str = "chroma"  # Options: "chroma", "pinecone", "faiss"
+    PERSIST_DIRECTORY: str = "./chroma_db"
+
+class QueryEngineSettings(BaseModel):
+    USE_QUERY_OPTIMIZER: bool = True
+    USE_RESULT_RE_RANKER: bool = True
 
 class Settings(BaseSettings):
     APP_NAME: str = "RAG Application"
@@ -39,6 +49,8 @@ class Settings(BaseSettings):
     chunking: ChunkingSettings = ChunkingSettings()
     chat_model: ChatModelSettings = ChatModelSettings()
     embedding_model: EmbeddingModelSettings = EmbeddingModelSettings()
+    vector_store: VectorStoreSettings = VectorStoreSettings()
+    query_engine: QueryEngineSettings = QueryEngineSettings()
 
     class Config:
         env_file = ".env"

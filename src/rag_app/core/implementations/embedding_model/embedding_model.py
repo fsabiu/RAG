@@ -33,5 +33,14 @@ class CohereEmbedding(EmbeddingModelInterface):
         return res.embeddings.float[0]
 
     @staticmethod
-    def calculate_similarity(a: List[float], b: List[float]) -> float:
+    def calculate_cosine_similarity(a: List[float], b: List[float]) -> float:
         return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+    @staticmethod
+    def calculate_l2_similarity(a: List[float], b: List[float]) -> float:
+        distance = np.linalg.norm(np.array(a) - np.array(b))
+        return 1 / (1 + distance)  # Convert distance to similarity
+
+    @staticmethod
+    def calculate_dot_product_similarity(a: List[float], b: List[float]) -> float:
+        return np.dot(a, b)

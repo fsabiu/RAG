@@ -32,7 +32,7 @@ class SemanticChunkStrategy(ChunkStrategyInterface):
         
         # Step 4: Calculate similarity scores
         similarities = [
-            self.embedding_model.calculate_similarity(embeddings[i], embeddings[i - 1])
+            self.embedding_model.calculate_cosine_similarity(embeddings[i], embeddings[i - 1])
             for i in range(1, len(embeddings))
         ]
         
