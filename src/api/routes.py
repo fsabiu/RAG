@@ -6,6 +6,7 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi.responses import JSONResponse
 
 # Interfaces
 from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
@@ -14,8 +15,6 @@ from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterf
 # Implementations
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.config import settings
-
-
 
 from rag_app.initialization import initialize_rag_components
 
@@ -39,13 +38,19 @@ def get_domain_manager():
 
 # API Routes
 
+from src.rag_app.private_config import private_settings
+from src.rag_app.public_config import public_settings
+
 @router.post("/setup_rag")
 async def setup_rag(config_data: dict = Body(...)):
     global query_engine, domain_manager
     
     try:
-        # Initialize components using the provided config_data
-        domain_manager, chat_model, embedding_model, chunk_strategy = initialize_rag_components(config_data)
+        # Merge public settings with incoming config_data
+        merged_config = {**public_settings.dict(), **config_data}
+        
+        # Initialize components using the merged configuration
+        domain_manager, chat_model, embedding_model, chunk_strategy = initialize_rag_components(merged_config)
         
         # Initialize the query engine with the components
         query_engine = QueryEngine(
@@ -54,14 +59,24 @@ async def setup_rag(config_data: dict = Body(...)):
             embedding_model=embedding_model,
             chat_model=chat_model,
             chunk_strategy=chunk_strategy,
-            query_optimizer=config_data['query_engine'].get('USE_QUERY_OPTIMIZER', True),
-            result_re_ranker=config_data['query_engine'].get('USE_RESULT_RE_RANKER', True)
+            query_optimizer=merged_config['query_engine'].get('USE_QUERY_OPTIMIZER', True),
+            result_re_ranker=merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True)
         )
         
         return {"message": "RAG system setup successfully"}
     except Exception as e:
         logger.error(f"Error during setup: {str(e)}")
         raise HTTPException(status_code=500, detail="An error occurred during setup")
+
+@router.get("/setup_rag_template")
+async def get_setup_rag_template():
+    try:
+        with open(os.path.join(private_settings.DOCS_FOLDER, "rag_setup_template.json"), "r") as template_file:
+            template_data = json.load(template_file)
+        return JSONResponse(content=template_data)
+    except Exception as e:
+        logger.error(f"Error loading setup RAG template: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while loading the template")
 
 @router.post("/ask")
 async def ask(question: str, domain_name: str, query_engine: QueryEngineInterface = Depends(get_query_engine)):
