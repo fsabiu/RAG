@@ -1,229 +1,28 @@
 import sys
 import os
-import time
-from dotenv import load_dotenv
+import logging
+import uvicorn
+from fastapi import FastAPI
+from ..api import routes
+from rag_app.config import settings
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import logging
-import uvicorn
-from fastapi import FastAPI
-from api import routes
-from rag_app.config import settings
-
-# Interfaces
-from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
-from rag_app.core.interfaces.chunk_strategy_interface import ChunkStrategyInterface
-from rag_app.core.interfaces.document_interface import DocumentFactoryInterface
-from rag_app.core.interfaces.domain_interface import DomainFactoryInterface
-from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
-from rag_app.core.interfaces.embedding_model_interface import EmbeddingModelInterface
-from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
-from rag_app.core.interfaces.storage_interface import StorageInterface
-from rag_app.core.interfaces.vector_store_interface import VectorStoreInterface
-
-# Implementations
-from rag_app.core.implementations.chat_model.oci_chat_model import OCI_CommandRplus
-from rag_app.core.implementations.chunk_strategy.fixed_size_strategy import FixedSizeChunkStrategy
-from rag_app.core.implementations.chunk_strategy.semantic_strategy import SemanticChunkStrategy
-from rag_app.core.implementations.document.document_factory import DocumentFactory
-from rag_app.core.implementations.domain.domain_factory import DomainFactory
-from rag_app.core.implementations.domain_manager.domain_manager import DomainManager
-from rag_app.core.implementations.embedding_model.cohere_embedding import CohereEmbedding
-from rag_app.core.implementations.embedding_model.ollama_embedding import OllamaEmbedding
-from rag_app.core.implementations.query_engine.query_engine import QueryEngine
-from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
-from rag_app.core.implementations.reranker.reranker import ResultReRanker
-from rag_app.core.implementations.storage.file_storage import FileStorage
-from rag_app.core.implementations.vector_store.vector_store import ChromaVectorStore
-from rag_app.core.implementations.vector_store.oracle_23ai import Oracle23aiVectorStore
-from rag_app.core.implementations.vector_store.vector_store_factory import VectorStoreFactory
-
-load_dotenv()
-
-
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-# Set the logger level to WARNING to suppress info and debug logs
-logging.getLogger('cohere').setLevel(logging.WARNING)
 
-# Suppress unwanted logs
-logging.getLogger('botocore').setLevel(logging.ERROR)
-logging.getLogger('boto3').setLevel(logging.ERROR)
-logging.getLogger('urllib3').setLevel(logging.ERROR)
-logging.getLogger('posthog').setLevel(logging.ERROR)
-logging.getLogger('sagemaker').setLevel(logging.ERROR)
-
+# Create FastAPI app
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 
+# Include the API router
+app.include_router(routes.router)
 
-def main():
-    logger.info("Initializing application...")
-
-    logger.info("Initializing chat model...")
-    try:
-        chat_model: ChatModel = OCI_CommandRplus()
-        logger.info(f"{chat_model.__class__.__name__} chat model initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize or test chat model: {str(e)}")
-        sys.exit(1)
-
-    try:
-        storage = FileStorage(settings.DATA_FOLDER)
-    except (FileNotFoundError, NotADirectoryError) as e:
-        logger.error(f"Failed to initialize storage: {e}")
-        sys.exit(1)
-
-    collections = storage.get_all_collections()
-    logger.info(f"Found {len(collections)} collections:")
-    for collection in collections:
-        logger.info(f"  - {collection}")
-
-    logger.info("Initializing embedding model...")
-    try:
-        if settings.embedding_model.PROVIDER.lower() == "cohere":
-            embedding_model = CohereEmbedding(model_name=settings.embedding_model.MODEL_NAME)
-            logger.info(f"CohereEmbedding model '{settings.embedding_model.MODEL_NAME}' initialized successfully")
-        elif settings.embedding_model.PROVIDER.lower() == "ollama":
-            ollama_url = f"http://{settings.embedding_model.OLLAMA_HOST}:{settings.embedding_model.OLLAMA_PORT}"
-            
-            embedding_model = OllamaEmbedding(
-                model_name=settings.embedding_model.MODEL_NAME,
-                ollama_host=settings.embedding_model.OLLAMA_HOST,
-                ollama_port=settings.embedding_model.OLLAMA_PORT
-            )
-            logger.info(f"OllamaEmbedding model '{settings.embedding_model.MODEL_NAME}' initialized successfully with URL: {ollama_url}")
-        else:
-            raise ValueError(f"Unsupported embedding model provider: {settings.embedding_model.PROVIDER}")
-    except Exception as e:
-        logger.error(f"Failed to initialize embedding model: {str(e)}")
-        sys.exit(1)
-        
-    logger.info("Initializing chunking strategy...")
-    if settings.chunking.STRATEGY == "fixed":
-        chunk_strategy = FixedSizeChunkStrategy(
-            chunk_size=settings.chunking.CHUNK_SIZE,
-            overlap=settings.chunking.CHUNK_OVERLAP
-        )
-        logger.info(f"Using FixedSizeChunkStrategy with chunk size {settings.chunking.CHUNK_SIZE} and overlap {settings.chunking.CHUNK_OVERLAP}")
-    elif settings.chunking.STRATEGY == "semantic":
-        chunk_strategy = SemanticChunkStrategy(
-            max_chunk_size=settings.chunking.CHUNK_SIZE,
-            embedding_model=embedding_model
-        )
-        logger.info(f"Using SemanticChunkStrategy with max chunk size {settings.chunking.CHUNK_SIZE}")
-    else:
-        logger.error(f"Invalid chunking strategy: {settings.chunking.STRATEGY}")
-        sys.exit(1)
-
-   
-    # Initialize domain and document factories
-    domain_factory = DomainFactory()
-    logger.info("Initializing document factory...")
-    document_factory = DocumentFactory(settings.document.IMPLEMENTATION)
-    logger.info(f"Document factory initialized with {settings.document.IMPLEMENTATION} implementation")
-    logger.info("Initializing vector store factory...")
-    vector_store_factory = VectorStoreFactory()
-    logger.info(f"Vector store factory initialized")
-
-
-    logger.info("Initializing DomainManager...")
-    start_time = time.time()
-    domain_manager = DomainManager(
-        storage=storage,
-        chunk_strategy=chunk_strategy,
-        chat_model=chat_model,
-        domain_factory=domain_factory,
-        document_factory=document_factory,
-        vector_store_factory=vector_store_factory,
-        vector_stores_config=settings.vector_store,
-        embedding_model=embedding_model
-    )
-    end_time = time.time()
-
-    # Read vector store configurations from settings
-
-    # for domain in domain_manager.get_domains():
-    #     collection_name = f"{domain.name.lower().replace(' ', '_')}"
-    #     vector_store_type = settings.vector_store.DOMAIN_CONFIG[domain.name]
-    #     try:
-    #         if vector_store_type == "Chroma":
-    #             vector_store = ChromaVectorStore(collection_name=collection_name, persist_directory="./chroma_db")
-    #         elif vector_store_type == "Oracle23ai":
-    #             # Initialize Oracle23ai vector store here
-    #             vector_store = Oracle23aiVectorStore(collection_name=collection_name, persist_directory="./oracle_db")
-    #         else:
-    #             logger.error(f"Unsupported vector store type '{vector_store_type}' for domain '{domain.name}'")
-    #             continue
-            
-    #         # Update the vector_stores of the domain manager
-    #         domain_manager.vector_stores[domain.name] = vector_store
-    #         logger.info(f"Created {vector_store_type} for collection: {collection_name}")
-    #     except Exception as e:
-    #         logger.error(f"Failed to create vector store for collection '{collection_name}': {str(e)}")
-    #         continue
-
-    """
-    Domain manager will have:
-    - Storage
-    - Chunk strategy
-    - Chat model
-    - Domains, that are dicts of:
-        - Domain name -> Domain
-        where Domains are lists of Documents (i.e. doc name, collection_name, title)
-    """
-    logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
-
-
-    # query_engine = QueryEngine(
-    #     domain_manager=domain_manager,
-    #     vector_stores=vector_stores,
-    #     embedding_model=embedding_model,
-    #     chat_model=chat_model,
-    #     chunk_strategy=chunk_strategy,
-    #     query_optimizer=QueryOptimizer(),
-    #     result_re_ranker=ResultReRanker()
-    # )
-
-    logger.info("Applying chunking strategy...")
-    start_time = time.time()
-    domain_manager.apply_chunking_strategy()
-    end_time = time.time()
-    logger.info(f"Chunking strategy applied in {end_time - start_time:.2f} seconds")
-
-    # Get all documents per domain
-    logger.info("Fetching documents for each domain:")
-    domains = domain_manager.get_domains()
-    for domain in domains:
-        documents = domain_manager.get_domain_documents(domain.name)
-        logger.info(f"  Domain: {domain.name}")
-        for doc in documents:
-            logger.info(f"    - {doc}")
-
-    """
-    # Perform offline initializations
-    # vector_store = VectorStore(settings.DATABASE_URL)
-
-    # embedding_model = EmbeddingModel(model_name=settings.EMBEDDING_MODEL_NAME)
-
-    # Create QueryEngine with the initialized models
-    # query_engine = QueryEngine(domain_manager, vector_store, chat_model, embedding_model)
-
-    # Prepare domains (chunk, embed, and store)
-    # query_engine.prepare_domains()
-
-    # Update the dependency injection
-    # def get_query_engine():
-    #     return query_engine
-
-    # Update the routes to use the new dependency
-    # routes.get_query_engine = get_query_engine
-
-    # app.include_router(routes.router)
-    """
+def run():
+    """Run the FastAPI application."""
+    logger.info("Starting the RAG Application...")
+    uvicorn.run("rag_app.main:app", host="0.0.0.0", port=8000, reload=True)
 
 if __name__ == "__main__":
-    main()
-    # uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    run()

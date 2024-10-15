@@ -1,26 +1,67 @@
 # Add the parent directory of 'api' (which should be 'src') to the Python path
 import os
 import sys
+import logging
+import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
+
+# Interfaces
 from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
 from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
+
+# Implementations
+from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.config import settings
-import logging
+
+
+
+from rag_app.initialization import initialize_rag_components
 
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
-# This will be updated in main.py
+# These will be updated in the /setup_RAG endpoint
+query_engine = None
+domain_manager = None
+
 def get_query_engine():
-    pass
+    if query_engine is None:
+        raise HTTPException(status_code=500, detail="Query engine not initialized")
+    return query_engine
 
 def get_domain_manager():
-    pass
+    if domain_manager is None:
+        raise HTTPException(status_code=500, detail="Domain manager not initialized")
+    return domain_manager
 
 # API Routes
+
+@router.post("/setup_rag")
+async def setup_rag(config_data: dict = Body(...)):
+    global query_engine, domain_manager
+    
+    try:
+        # Initialize components using the provided config_data
+        domain_manager, chat_model, embedding_model, chunk_strategy = initialize_rag_components(config_data)
+        
+        # Initialize the query engine with the components
+        query_engine = QueryEngine(
+            domain_manager=domain_manager,
+            vector_stores=domain_manager.vector_stores,
+            embedding_model=embedding_model,
+            chat_model=chat_model,
+            chunk_strategy=chunk_strategy,
+            query_optimizer=config_data['query_engine'].get('USE_QUERY_OPTIMIZER', True),
+            result_re_ranker=config_data['query_engine'].get('USE_RESULT_RE_RANKER', True)
+        )
+        
+        return {"message": "RAG system setup successfully"}
+    except Exception as e:
+        logger.error(f"Error during setup: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred during setup")
 
 @router.post("/ask")
 async def ask(question: str, domain_name: str, query_engine: QueryEngineInterface = Depends(get_query_engine)):
@@ -77,4 +118,18 @@ async def delete_domain(domain_name: str, domain_manager=Depends(get_domain_mana
         raise HTTPException(status_code=404, detail=f"Domain '{domain_name}' not found")
     except Exception as e:
         logger.error(f"Error deleting domain: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/configure")
+async def configure(config_data: dict):
+    try:
+        # Write the configuration data to a file
+        with open("src/rag_app/config.json", "w") as config_file:
+            json.dump(config_data, config_file)
+        
+        # Optionally, trigger the preparation phase here
+        # prepare_data()
+
+        return {"message": "Configuration updated successfully"}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
