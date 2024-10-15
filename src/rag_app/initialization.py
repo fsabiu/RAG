@@ -1,7 +1,6 @@
 import logging
 import sys
 import time
-from rag_app.config import settings
 
 # Interfaces and Implementations
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
@@ -17,18 +16,17 @@ from rag_app.core.implementations.vector_store.vector_store_factory import Vecto
 from rag_app.core.implementations.storage.file_storage import FileStorage
 
 logger = logging.getLogger(__name__)
-from rag_app.config import settings
 
 def initialize_rag_components(config_data: dict):
     try:
-        chat_model: ChatModelInterface = OCI_CommandRplus()
+        chat_model: ChatModelInterface = OCI_CommandRplus(config_data["chat_model"])
         logger.info(f"{chat_model.__class__.__name__} chat model initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize or test chat model: {str(e)}")
         sys.exit(1)
 
     try:
-        storage = FileStorage(settings.DATA_FOLDER)
+        storage = FileStorage(config_data["DATA_FOLDER"])
     except (FileNotFoundError, NotADirectoryError) as e:
         logger.error(f"Failed to initialize storage: {e}")
         sys.exit(1)

@@ -8,7 +8,6 @@ from ...interfaces.reranker_interface import ReRankerInterface
 from ...interfaces.embedding_model_interface import EmbeddingModelInterface
 from ...interfaces.chat_model_interface import ChatModelInterface
 from ...interfaces.chunk_strategy_interface import ChunkStrategyInterface
-from rag_app.config import settings
 
 logger = logging.getLogger(__name__)
 

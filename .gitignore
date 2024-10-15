@@ -11,6 +11,7 @@ env/
 # Data
 data/
 chunks/
+docs/rag_setup_merged.json
 
 # Logs
 *.log

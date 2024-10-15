@@ -3,10 +3,10 @@ import os
 import sys
 import logging
 import json
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Interfaces
 from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
@@ -14,13 +14,16 @@ from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterf
 
 # Implementations
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
-from rag_app.config import settings
+from rag_app.private_config import private_settings
 
+# Config
 from rag_app.initialization import initialize_rag_components
 
-router = APIRouter()
-
+# Logs
 logger = logging.getLogger(__name__)
+
+# App
+router = APIRouter()
 
 # These will be updated in the /setup_RAG endpoint
 query_engine = None
@@ -47,7 +50,12 @@ async def setup_rag(config_data: dict = Body(...)):
     
     try:
         # Merge public settings with incoming config_data
-        merged_config = {**public_settings.dict(), **config_data}
+        merged_config = {**private_settings.dict(), **config_data}
+        
+        # Write the merged configuration to a file
+        merged_config_path = os.path.join(private_settings.DOCS_FOLDER, "rag_setup_merged.json")
+        with open(merged_config_path, "w") as merged_config_file:
+            json.dump(merged_config, merged_config_file, indent=4)
         
         # Initialize components using the merged configuration
         domain_manager, chat_model, embedding_model, chunk_strategy = initialize_rag_components(merged_config)

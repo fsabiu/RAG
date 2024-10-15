@@ -4,7 +4,7 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 from ..api import routes
-from rag_app.config import settings
+from rag_app.private_config import private_settings
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
-app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
+app = FastAPI(title=private_settings.APP_NAME, version=private_settings.APP_VERSION)
 
 # Include the API router
 app.include_router(routes.router)

@@ -12,7 +12,7 @@ from ...interfaces.chat_model_interface import ChatModelInterface
 from ...interfaces.vector_store_interface import VectorStoreInterface, VectorStoreFactoryInterface
 from ...interfaces.embedding_model_interface import EmbeddingModelInterface
 from ..domain.domain import Domain
-from ....config import settings  # Import settings from config
+from ....private_config import private_settings  # Import settings from config
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class DomainManager(DomainManagerInterface):
 
     def store_chunks(self, domain_name: str, document: DocumentInterface) -> None:
         strategy_name = self.chunk_strategy.strategy_name
-        data_path = settings.DATA_FOLDER  # Use DATA_FOLDER from settings
+        data_path = private_settings.DATA_FOLDER  # Use DATA_FOLDER from settings
         chunks_dir = os.path.join(data_path, '../chunks', f"{domain_name}_{strategy_name}")
         
         # Create directory if it doesn't exist

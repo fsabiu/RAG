@@ -1,5 +1,4 @@
 import logging
-from rag_app.config import settings
 from langchain_community.chat_models import ChatOCIGenAI
 from langchain_core.prompts import PromptTemplate
 from typing import Optional, Iterator, Union
@@ -15,20 +14,25 @@ oci.base_client.is_http_log_enabled(True)
 logger = logging.getLogger(__name__)
 
 class OCI_CommandRplus(ChatModelInterface):
-    def __init__(self):
+    def __init__(self, settings: dict):
         logger.info("Initializing OCI_CommandRplus chat model")
-        self.llm = ChatOCIGenAI(
-            model_id=settings.chat_model.MODEL_ID,
-            service_endpoint=settings.chat_model.OCI_GENAI_ENDPOINT,
-            compartment_id=settings.chat_model.OCI_COMPARTMENT_ID,
-            auth_type="API_KEY",
-            auth_profile=settings.chat_model.OCI_CONFIG_PROFILE,
-            model_kwargs={
-                "temperature": settings.chat_model.TEMPERATURE,
-                "max_tokens": settings.chat_model.MAX_TOKENS,
-                "top_p": settings.chat_model.TOP_P
+        
+        # Use the settings dictionary to fetch parameters
+        llm_params = {
+            "model_id": settings["MODEL_ID"],
+            "service_endpoint": settings["OCI_GENAI_ENDPOINT"],
+            "compartment_id": settings["OCI_COMPARTMENT_ID"],
+            "auth_type": "API_KEY",
+            "auth_profile": settings["OCI_CONFIG_PROFILE"],
+            "model_kwargs": {
+                "temperature": settings["TEMPERATURE"],
+                "max_tokens": settings["MAX_TOKENS"],
+                "top_p": settings["TOP_P"]
             }
-        )
+        }
+        
+        # Unpack the dictionary into the ChatOCIGenAI constructor
+        self.llm = ChatOCIGenAI(**llm_params)
 
     def chat(self, system_prompt: str, query: str, stream: bool = False) -> Union[str, Iterator[str]]:
         prompt_template = f"{system_prompt}\n\nHuman: {{query}}\n\nAssistant:"
