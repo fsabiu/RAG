@@ -9,3 +9,8 @@ class VectorStoreInterface(ABC):
     @abstractmethod
     def query(self, query_embedding: List[float], top_k: int = 10) -> List[Dict[str, Any]]:
         pass
+
+class VectorStoreFactoryInterface(ABC):
+    @abstractmethod
+    def create_vector_store(self, store_type: str, collection_name: str, persist_directory: str = None) -> VectorStoreInterface:
+        pass

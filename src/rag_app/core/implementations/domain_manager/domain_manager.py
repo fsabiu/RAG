@@ -9,7 +9,7 @@ from ...interfaces.document_interface import DocumentInterface, DocumentFactoryI
 from ...interfaces.storage_interface import StorageInterface
 from ...interfaces.chunk_strategy_interface import ChunkStrategyInterface
 from ...interfaces.chat_model_interface import ChatModelInterface
-from ...interfaces.vector_store_interface import VectorStoreInterface
+from ...interfaces.vector_store_interface import VectorStoreInterface, VectorStoreFactoryInterface
 from ...interfaces.embedding_model_interface import EmbeddingModelInterface
 from ..domain.domain import Domain
 from ....config import settings  # Import settings from config
@@ -22,17 +22,20 @@ class DomainManager(DomainManagerInterface):
                  chat_model: ChatModelInterface, 
                  domain_factory: DomainFactoryInterface, 
                  document_factory: DocumentFactoryInterface,
-                 vector_stores: Dict[str, VectorStoreInterface],
+                 vector_store_factory: VectorStoreFactoryInterface,
+                 vector_stores_config: Dict[str, str], # As per config.vector_store
                  embedding_model: EmbeddingModelInterface):
         self.storage = storage
         self.chunk_strategy = chunk_strategy
         self.chat_model = chat_model
-        self.vector_stores = vector_stores
+        self.vector_stores_config = vector_stores_config
         self.embedding_model = embedding_model
         self.domain_factory = domain_factory
         self.document_factory = document_factory
         self.domains: Dict[str, DomainInterface] = {}
+        self.vector_stores: Dict[str, VectorStoreInterface] = {}  # Fixed initialization
         self._create_domains()
+        self.initialize_vector_stores(self.vector_stores_config)
 
     def _create_domains(self) -> None:
         domain_names = self.storage.get_all_collections()
@@ -123,7 +126,7 @@ class DomainManager(DomainManagerInterface):
     def store_chunks(self, domain_name: str, document: DocumentInterface) -> None:
         strategy_name = self.chunk_strategy.strategy_name
         data_path = settings.DATA_FOLDER  # Use DATA_FOLDER from settings
-        chunks_dir = os.path.join(data_path, 'chunks', f"{domain_name}_{strategy_name}")
+        chunks_dir = os.path.join(data_path, '../chunks', f"{domain_name}_{strategy_name}")
         
         # Create directory if it doesn't exist
         os.makedirs(chunks_dir, exist_ok=True)
@@ -188,3 +191,24 @@ class DomainManager(DomainManagerInterface):
                     document.content = content
                 return document
         raise ValueError(f"Document '{document_name}' not found in domain '{domain_name}'")
+
+    def initialize_vector_stores(self, vector_store_configs: Dict[str,str]):  # Updated parameter type
+        for domain in self.get_domains():
+            collection_name = f"{domain.name.lower().replace(' ', '_')}"
+            vector_store_type = vector_store_configs.DOMAIN_CONFIG.get(domain.name, vector_store_configs.DEFAULT_PROVIDER)
+            try:
+                if vector_store_type == "Chroma":
+                    vector_store = vector_store_factory.create_vector_store(collection_name=collection_name, persist_directory=vector_store_configs.CHROMA_PERSIST_DIRECTORY)
+                elif vector_store_type == "Oracle23ai":
+                    # Initialize Oracle23ai vector store here
+                    vector_store = vector_store_factory.create_vector_store(collection_name=collection_name)
+                else:
+                    logger.error(f"Unsupported vector store type '{vector_store_type}' for domain '{domain.name}'")
+                    continue
+                
+                # Update the vector_stores of the domain manager
+                self.vector_stores[domain.name] = vector_store
+                logger.info(f"Created {vector_store_type} for collection: {collection_name}")
+            except Exception as e:
+                logger.error(f"Failed to create vector store for collection '{collection_name}': {str(e)}")
+                continue

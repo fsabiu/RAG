@@ -2,6 +2,7 @@ import os
 from pydantic_settings import BaseSettings
 from pydantic import BaseModel
 from typing import Dict, List, Optional
+from collections import defaultdict
 
 class ChunkingSettings(BaseModel):
     STRATEGY: str = "semantic"  # Options: "semantic", "fixed"
@@ -30,8 +31,9 @@ class EmbeddingModelSettings(BaseModel):
     OLLAMA_PORT: int = 11434  # Default Ollama port
 
 class VectorStoreSettings(BaseModel):
-    PROVIDER: str = "chroma"  # Options: "chroma", "pinecone", "faiss"
-    PERSIST_DIRECTORY: str = "./chroma_db"
+    DEFAULT_PROVIDER: str = "Chroma"  # Default options: "Chroma", "Oracle23ai"
+    CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
+    DOMAIN_CONFIG: Dict[str, str] = defaultdict(lambda: "chroma")  # Maps domain names to vector store types
 
 class QueryEngineSettings(BaseModel):
     USE_QUERY_OPTIMIZER: bool = True

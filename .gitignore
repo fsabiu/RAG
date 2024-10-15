@@ -10,6 +10,7 @@ env/
 
 # Data
 data/
+chunks/
 
 # Logs
 *.log

@@ -37,6 +37,8 @@ from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOp
 from rag_app.core.implementations.reranker.reranker import ResultReRanker
 from rag_app.core.implementations.storage.file_storage import FileStorage
 from rag_app.core.implementations.vector_store.vector_store import ChromaVectorStore
+from rag_app.core.implementations.vector_store.oracle_23ai import Oracle23aiVectorStore
+from rag_app.core.implementations.vector_store.vector_store_factory import VectorStoreFactory
 
 load_dotenv()
 
@@ -116,17 +118,17 @@ def main():
         logger.error(f"Invalid chunking strategy: {settings.chunking.STRATEGY}")
         sys.exit(1)
 
+   
+    # Initialize domain and document factories
+    domain_factory = DomainFactory()
     logger.info("Initializing document factory...")
     document_factory = DocumentFactory(settings.document.IMPLEMENTATION)
     logger.info(f"Document factory initialized with {settings.document.IMPLEMENTATION} implementation")
+    logger.info("Initializing vector store factory...")
+    vector_store_factory = VectorStoreFactory()
+    logger.info(f"Vector store factory initialized")
 
-    # Initialize domain and document factories
-    domain_factory = DomainFactory()
-    document_factory = DocumentFactory()
 
-    logger.info("Initializing ChromaVectorStores...")
-    vector_stores = {}
-        
     logger.info("Initializing DomainManager...")
     start_time = time.time()
     domain_manager = DomainManager(
@@ -135,21 +137,34 @@ def main():
         chat_model=chat_model,
         domain_factory=domain_factory,
         document_factory=document_factory,
-        vector_stores=vector_stores,
+        vector_store_factory=vector_store_factory,
+        vector_stores_config=settings.vector_store,
         embedding_model=embedding_model
     )
     end_time = time.time()
 
-    for domain in domain_manager.get_domains():
-        collection_name = f"{domain.name.lower().replace(' ', '_')}"
-        try:
-            vector_store = ChromaVectorStore(collection_name=collection_name, persist_directory="./chroma_db")
-            vector_stores[domain.name] = vector_store
-            logger.info(f"Created ChromaVectorStore for collection: {collection_name}")
-        except Exception as e:
-            logger.error(f"Failed to create ChromaVectorStore for collection '{collection_name}': {str(e)}")
-            # Continue with the next domain instead of exiting
-            continue
+    # Read vector store configurations from settings
+
+    # for domain in domain_manager.get_domains():
+    #     collection_name = f"{domain.name.lower().replace(' ', '_')}"
+    #     vector_store_type = settings.vector_store.DOMAIN_CONFIG[domain.name]
+    #     try:
+    #         if vector_store_type == "Chroma":
+    #             vector_store = ChromaVectorStore(collection_name=collection_name, persist_directory="./chroma_db")
+    #         elif vector_store_type == "Oracle23ai":
+    #             # Initialize Oracle23ai vector store here
+    #             vector_store = Oracle23aiVectorStore(collection_name=collection_name, persist_directory="./oracle_db")
+    #         else:
+    #             logger.error(f"Unsupported vector store type '{vector_store_type}' for domain '{domain.name}'")
+    #             continue
+            
+    #         # Update the vector_stores of the domain manager
+    #         domain_manager.vector_stores[domain.name] = vector_store
+    #         logger.info(f"Created {vector_store_type} for collection: {collection_name}")
+    #     except Exception as e:
+    #         logger.error(f"Failed to create vector store for collection '{collection_name}': {str(e)}")
+    #         continue
+
     """
     Domain manager will have:
     - Storage
@@ -162,15 +177,15 @@ def main():
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
 
 
-    query_engine = QueryEngine(
-        domain_manager=domain_manager,
-        vector_stores=vector_stores,
-        embedding_model=embedding_model,
-        chat_model=chat_model,
-        chunk_strategy=chunk_strategy,
-        query_optimizer=QueryOptimizer(),
-        result_re_ranker=ResultReRanker()
-    )
+    # query_engine = QueryEngine(
+    #     domain_manager=domain_manager,
+    #     vector_stores=vector_stores,
+    #     embedding_model=embedding_model,
+    #     chat_model=chat_model,
+    #     chunk_strategy=chunk_strategy,
+    #     query_optimizer=QueryOptimizer(),
+    #     result_re_ranker=ResultReRanker()
+    # )
 
     logger.info("Applying chunking strategy...")
     start_time = time.time()
