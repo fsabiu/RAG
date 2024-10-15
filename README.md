@@ -6,25 +6,27 @@
 
 <p align="center">
 
+![Oracle Database 23ai](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
+![OCI GenAI](https://img.shields.io/badge/LLM-OCI%20GenAI-red)
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
-![OCI GenAI](https://img.shields.io/badge/ChatModel-OCI%20GenAI-red)
 ![Oracle DB](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![LLM Support](https://img.shields.io/badge/LLM%20Support-Cohere%20%7C%20Custom-green)
+![VectorDB Support](https://img.shields.io/badge/VectorDB%20Support-Chroma%20%7C%20Custom-green)
 ![Embedding Models](https://img.shields.io/badge/Embedding%20Models-Ollama%20%7C%20Cohere-purple)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </p>
 
-This is a sophisticated Retrieval-Augmented Generation (RAG) application leveraging FastAPI, OCI GenAI, and Oracle Database 23ai. The application is designed with a modular architecture, emphasizing clean abstractions and separation of concerns, with support for Cohere and custom LLMs.
+This Retrieval-Augmented Generation (RAG) application leverages **OCI GenAI** as its language model and **Oracle Database 23ai** as a powerful vector store. Designed with a modular architecture, it emphasizes clean abstractions and separation of concerns, providing seamless integration with Oracle's advanced AI and database technologies.
 
 ## Features
 
 - Modular architecture with well-defined interfaces
 - Support for multiple chunking strategies (fixed-size and semantic)
-- Integration with OCI GenAI for chat model functionality
+- Integration with **OCI GenAI** for enhanced chat model functionality
 - Flexible document and domain management
 - Customizable query engine with optimization and re-ranking capabilities
-- Vector store integration for efficient similarity search
+- Efficient similarity search powered by **Oracle Database 23ai**
 - Support for Ollama and Cohere embedding models
 
 ## Architecture Overview
