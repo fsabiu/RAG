@@ -25,7 +25,7 @@ class PrivateSettings(BaseSettings):
     APP_NAME: str = "RAG Application"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = "DEBUG"
     DATABASE_URL: str
     OCI_API_KEY: str
     COHERE_API_KEY: str
