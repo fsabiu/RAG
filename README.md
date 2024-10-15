@@ -9,7 +9,6 @@
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![Oracle Database 23ai](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![OCI GenAI](https://img.shields.io/badge/LLM-OCI%20GenAI-red)
-![Oracle DB](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![LLM Support](https://img.shields.io/badge/LLM%20Support-Cohere%20%7C%20Custom-green)
 ![VectorDB Support](https://img.shields.io/badge/VectorDB%20Support-Chroma%20%7C%20Custom-green)
 ![Embedding Models](https://img.shields.io/badge/Embedding%20Models-Ollama%20%7C%20Cohere-purple)
