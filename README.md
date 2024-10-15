@@ -6,9 +6,9 @@
 
 <p align="center">
 
+![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![Oracle Database 23ai](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![OCI GenAI](https://img.shields.io/badge/LLM-OCI%20GenAI-red)
-![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![Oracle DB](https://img.shields.io/badge/VectorDB-Oracle%20Database%2023ai-red)
 ![LLM Support](https://img.shields.io/badge/LLM%20Support-Cohere%20%7C%20Custom-green)
 ![VectorDB Support](https://img.shields.io/badge/VectorDB%20Support-Chroma%20%7C%20Custom-green)
@@ -73,7 +73,7 @@ The application uses the following key interfaces:
 - `QueryOptimizerInterface`: Optimizes incoming queries
 - `ReRankerInterface`: Re-ranks retrieved documents for relevance
 - `StorageInterface`: Manages raw document storage and retrieval
-- `VectorStoreInterface`: Handles storage and querying of vector embeddings
+- `VectorStoreInterface` and `VectorStoreFactoryInterface` : Handle and create storage and querying of vector embeddings
 
 This architecture ensures a modular and extensible system, where each component can be independently developed, tested, and optimized.
 
