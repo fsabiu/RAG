@@ -20,7 +20,9 @@
         "embedding_model": {
             "PROVIDER": "ollama",
             "MODEL_NAME": "mxbai-embed-large",
-            "EMBEDDING_DIMENSION": 1024
+            "EMBEDDING_DIMENSION": 1024,
+            "OLLAMA_HOST": "10.0.0.135",
+            "OLLAMA_PORT": 11434
         },
         "vector_store": {
             "DEFAULT_PROVIDER": "Chroma"
@@ -48,6 +50,9 @@
                 "embedding_model": "Embedding Model",
                 "embedding_model.PROVIDER": "Embedding Model Provider",
                 "embedding_model.MODEL_NAME": "Embedding Model Name",
+                "embedding_model.EMBEDDING_DIMENSION": "Embedding Dimensions",
+                "embedding_model.OLLAMA_HOST": "Ollama host",
+                "embedding_model.OLLAMA_PORT": "Ollama port",
                 "vector_store": "Vector Store",
                 "vector_store.DEFAULT_PROVIDER": "Default Vector Store Provider",
                 "vector_store.DOMAIN_CONFIG": "Domain-specific Vector Store",
@@ -77,9 +82,7 @@
                 "PROVIDER": {
                     "allowed_values": ["ollama", "cohere"],
                     "dependencies": {
-                        "ollama": {
-                            "MODEL_NAME": ["mxbai-embed-large"]
-                        },
+                        "ollama": ["MODEL_NAME", "EMBEDDING_DIMENSION", "OLLAMA_HOST", "OLLAMA_PORT"],
                         "cohere": {
                             "MODEL_NAME": ["embed-english-v3.0"]
                         }
