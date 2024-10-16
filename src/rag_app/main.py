@@ -3,6 +3,7 @@ import os
 import logging
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from ..api import routes
 from rag_app.private_config import private_settings
 
@@ -15,6 +16,16 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(title=private_settings.APP_NAME, version=private_settings.APP_VERSION)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Add your frontend URL explicitly
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Specify methods
+    allow_headers=["*"],
+    expose_headers=["*"],  # Add this line
+)
 
 # Include the API router
 app.include_router(routes.router)
