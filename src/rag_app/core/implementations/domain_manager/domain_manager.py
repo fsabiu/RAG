@@ -192,21 +192,25 @@ class DomainManager(DomainManagerInterface):
                 return document
         raise ValueError(f"Document '{document_name}' not found in domain '{domain_name}'")
 
-    def initialize_vector_stores(self, vector_store_configs: Dict[str,str]):  # Updated parameter type
+    def initialize_vector_stores(self, vector_store_configs: Dict[str,str]):
         for domain in self.get_domains():
             collection_name = f"{domain.name.lower().replace(' ', '_')}"
             logger.info(f"Initializing vector store for domain {domain} - collection: {collection_name}")
             logger.info(f"vector_store_configs: {vector_store_configs}")
-            vector_store_type = vector_store_configs["DOMAIN_CONFIG"].get(domain.name, vector_store_configs["DEFAULT_PROVIDER"])
+            
+            # Use get() method with a default value to safely access DOMAIN_CONFIG
+            domain_config = vector_store_configs.get("DOMAIN_CONFIG", {})
+            vector_store_type = domain_config.get(domain.name, vector_store_configs["DEFAULT_PROVIDER"])
+            
             try:
                 if vector_store_type == "Chroma":
                     vector_store = vector_store_factory.create_vector_store(collection_name=collection_name, persist_directory=vector_store_configs.CHROMA_PERSIST_DIRECTORY)
                 elif vector_store_type == "Oracle23ai":
                     # Initialize Oracle23ai vector store here
                     vector_store = vector_store_factory.create_vector_store(collection_name=collection_name)
-                else: # TODO generalize
+                else:
                     logger.info(f"Unsupported vector store type '{vector_store_type}' for domain '{domain.name}'. Using default {vector_store_configs['DEFAULT_PROVIDER']}")
-                    contvector_store = vector_store_factory.create_vector_store(collection_name=collection_name, persist_directory=vector_store_configs.CHROMA_PERSIST_DIRECTORY)
+                    vector_store = vector_store_factory.create_vector_store(collection_name=collection_name, persist_directory=vector_store_configs.CHROMA_PERSIST_DIRECTORY)
                 
                 # Update the vector_stores of the domain manager
                 self.vector_stores[domain.name] = vector_store
