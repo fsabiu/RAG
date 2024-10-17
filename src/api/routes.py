@@ -6,6 +6,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
 from datetime import datetime
+import glob
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -206,3 +207,27 @@ def merge_configs(base_config: dict, new_config: dict) -> dict:
             logger.debug(f"Set value for key '{key}': {merged_config[key]}")
     
     return merged_config
+
+@router.get("/rag_config")
+async def rag_config():
+    """
+    Retrieve the most recent RAG configuration.
+    """
+    try:
+        config_folder = private_settings.CONFIGS_FOLDER
+        config_files = glob.glob(os.path.join(config_folder, "config_*.json"))
+        
+        if not config_files:
+            raise HTTPException(status_code=404, detail="No configuration files found")
+        
+        # Sort files by name (which includes timestamp) in descending order
+        latest_config_file = max(config_files)
+        
+        with open(latest_config_file, "r") as file:
+            config_data = json.load(file)
+        
+        logger.info(f"Successfully retrieved latest RAG configuration: {latest_config_file}")
+        return JSONResponse(content=config_data)
+    except Exception as e:
+        logger.error(f"Error retrieving RAG configuration: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while retrieving the configuration")
