@@ -31,6 +31,7 @@ class PrivateSettings(BaseSettings):
     COHERE_API_KEY: str
     DATA_FOLDER: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data")
     DOCS_FOLDER: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs")
+    CONFIGS_FOLDER: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "configs")
 
     # Nested settings
     chat_model: ChatModelSettings = ChatModelSettings()

@@ -5,6 +5,7 @@ import logging
 import json
 from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
+from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -44,37 +45,6 @@ def get_domain_manager():
 from src.rag_app.private_config import private_settings
 from src.rag_app.public_config import public_settings
 
-def merge_configs(base_config: dict, new_config: dict) -> dict:
-    """
-    Merge two configuration dictionaries. If both dictionaries have the same key
-    and their values are lists, sets, or dictionaries, the values are combined.
-    """
-    merged_config = base_config.copy()
-    for key, value in new_config.items():
-        logger.debug(f"Processing key: {key}")
-        logger.debug(f"Base config value: {merged_config.get(key)} (type: {type(merged_config.get(key))})")
-        logger.debug(f"New config value: {value} (type: {type(value)})")
-        
-        if key in merged_config:
-            if isinstance(merged_config[key], dict) and isinstance(value, dict):
-                # Recursively merge dictionaries
-                merged_config[key] = merge_configs(merged_config[key], value)
-                logger.debug(f"Merged dictionary for key '{key}': {merged_config[key]}")
-            elif isinstance(merged_config[key], (list, set)) and isinstance(value, (list, set)):
-                # Combine the values if both are lists or sets
-                merged_config[key] = list(set(merged_config[key]).union(value))
-                logger.debug(f"Combined value for key '{key}': {merged_config[key]}")
-            else:
-                # Overwrite the value if they are not both lists, sets, or dicts
-                merged_config[key] = value
-                logger.debug(f"Overwritten value for key '{key}': {merged_config[key]}")
-        else:
-            # Add the new key-value pair
-            merged_config[key] = value
-            logger.debug(f"Set value for key '{key}': {merged_config[key]}")
-    
-    return merged_config
-
 @router.post("/setup_rag")
 async def setup_rag(config_data: dict = Body(...)):
     global query_engine, domain_manager
@@ -101,6 +71,13 @@ async def setup_rag(config_data: dict = Body(...)):
             query_optimizer=merged_config['query_engine'].get('USE_QUERY_OPTIMIZER', True),
             result_re_ranker=merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True)
         )
+        
+        # Store the original config_data with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        config_filename = f"config_{timestamp}.json"
+        config_path = os.path.join(private_settings.CONFIGS_FOLDER, config_filename)
+        with open(config_path, "w") as config_file:
+            json.dump(config_data, config_file, indent=4)
         
         return {"message": "RAG system setup successfully"}
     except Exception as e:
@@ -187,3 +164,35 @@ async def configure(config_data: dict):
         return {"message": "Configuration updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def merge_configs(base_config: dict, new_config: dict) -> dict:
+    """
+    Merge two configuration dictionaries. If both dictionaries have the same key
+    and their values are lists, sets, or dictionaries, the values are combined.
+    """
+    merged_config = base_config.copy()
+    for key, value in new_config.items():
+        logger.debug(f"Processing key: {key}")
+        logger.debug(f"Base config value: {merged_config.get(key)} (type: {type(merged_config.get(key))})")
+        logger.debug(f"New config value: {value} (type: {type(value)})")
+        
+        if key in merged_config:
+            if isinstance(merged_config[key], dict) and isinstance(value, dict):
+                # Recursively merge dictionaries
+                merged_config[key] = merge_configs(merged_config[key], value)
+                logger.debug(f"Merged dictionary for key '{key}': {merged_config[key]}")
+            elif isinstance(merged_config[key], (list, set)) and isinstance(value, (list, set)):
+                # Combine the values if both are lists or sets
+                merged_config[key] = list(set(merged_config[key]).union(value))
+                logger.debug(f"Combined value for key '{key}': {merged_config[key]}")
+            else:
+                # Overwrite the value if they are not both lists, sets, or dicts
+                merged_config[key] = value
+                logger.debug(f"Overwritten value for key '{key}': {merged_config[key]}")
+        else:
+            # Add the new key-value pair
+            merged_config[key] = value
+            logger.debug(f"Set value for key '{key}': {merged_config[key]}")
+    
+    return merged_config
