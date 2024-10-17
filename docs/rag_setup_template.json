@@ -41,6 +41,8 @@
                 "chunking.CHUNK_SIZE": "Chunks size",
                 "chunking.MAX_CHUNK_SIZE": "Maximum chunk size",
                 "query_engine": "Query Engine",
+                "query_engine.USE_QUERY_OPTIMIZER": "Query optimizer",
+                "query_engine.USE_RESULT_RE_RANKER": "Query reranker",
                 "chat_model": "Chat Model",
                 "chat_model.TEMPERATURE": "Temperature",
                 "chat_model.MODEL_ID": "Model ID",
