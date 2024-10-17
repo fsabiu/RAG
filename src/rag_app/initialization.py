@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+import traceback  # Add this import
 
 # Interfaces and Implementations
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
@@ -80,22 +81,28 @@ def initialize_rag_components(config_data: dict):
     logger.info(f"Document factory initialized with {config_data['document']['IMPLEMENTATION']} implementation")
     logger.info("Initializing vector store factory...")
     vector_store_factory = VectorStoreFactory()
-    logger.info(f"Vector store factory initialized")
+    logger.info("Vector store factory initialized")
 
     logger.info("Initializing DomainManager...")
     start_time = time.time()
-    domain_manager = DomainManager(
-        storage=storage,
-        chunk_strategy=chunk_strategy,
-        chat_model=chat_model,
-        domain_factory=domain_factory,
-        document_factory=document_factory,
-        vector_store_factory=vector_store_factory,
-        vector_stores_config=config_data['vector_store'],
-        embedding_model=embedding_model
-    )
+    try:
+        domain_manager = DomainManager(
+            storage=storage,
+            chunk_strategy=chunk_strategy,
+            chat_model=chat_model,
+            domain_factory=domain_factory,
+            document_factory=document_factory,
+            vector_store_factory=vector_store_factory,
+            vector_stores_config=config_data['vector_store'],
+            embedding_model=embedding_model
+        )
+    except Exception as e:
+        logger.error(f"Failed to initialize DomainManager: {str(e)}")
+        logger.error("Full traceback:")
+        logger.error(traceback.format_exc())
+        raise
+
     end_time = time.time()
     logger.info(f"DomainManager initialized in {end_time - start_time:.2f} seconds")
 
     return domain_manager, chat_model, embedding_model, chunk_strategy
-

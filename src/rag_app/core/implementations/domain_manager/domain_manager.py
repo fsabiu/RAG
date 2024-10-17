@@ -22,9 +22,9 @@ class DomainManager(DomainManagerInterface):
                  chat_model: ChatModelInterface, 
                  domain_factory: DomainFactoryInterface, 
                  document_factory: DocumentFactoryInterface,
-                 vector_store_factory: VectorStoreFactoryInterface,
                  vector_stores_config: Dict[str, str], # As per config.vector_store
-                 embedding_model: EmbeddingModelInterface):
+                 embedding_model: EmbeddingModelInterface,
+                 vector_store_factory: VectorStoreFactoryInterface):
         self.storage = storage
         self.chunk_strategy = chunk_strategy
         self.chat_model = chat_model
@@ -33,7 +33,8 @@ class DomainManager(DomainManagerInterface):
         self.domain_factory = domain_factory
         self.document_factory = document_factory
         self.domains: Dict[str, DomainInterface] = {}
-        self.vector_stores: Dict[str, VectorStoreInterface] = {}  # Fixed initialization
+        self.vector_stores: Dict[str, VectorStoreInterface] = {}
+        self.vector_store_factory = vector_store_factory
         self._create_domains()
         self.initialize_vector_stores(self.vector_stores_config)
 
@@ -203,18 +204,28 @@ class DomainManager(DomainManagerInterface):
             vector_store_type = domain_config.get(domain.name, vector_store_configs["DEFAULT_PROVIDER"])
             
             try:
-                if vector_store_type == "Chroma":
-                    vector_store = vector_store_factory.create_vector_store(collection_name=collection_name, persist_directory=vector_store_configs.CHROMA_PERSIST_DIRECTORY)
-                elif vector_store_type == "Oracle23ai":
-                    # Initialize Oracle23ai vector store here
-                    vector_store = vector_store_factory.create_vector_store(collection_name=collection_name)
-                else:
-                    logger.info(f"Unsupported vector store type '{vector_store_type}' for domain '{domain.name}'. Using default {vector_store_configs['DEFAULT_PROVIDER']}")
-                    vector_store = vector_store_factory.create_vector_store(collection_name=collection_name, persist_directory=vector_store_configs.CHROMA_PERSIST_DIRECTORY)
+                # Create vector store using the factory method
+                vector_store = self.vector_store_factory.create_vector_store(
+                    store_type=vector_store_type,
+                    collection_name=collection_name,
+                    persist_directory=vector_store_configs.get("CHROMA_PERSIST_DIRECTORY") if vector_store_type == "Chroma" else None
+                )
                 
                 # Update the vector_stores of the domain manager
                 self.vector_stores[domain.name] = vector_store
                 logger.info(f"Created {vector_store_type} for collection: {collection_name}")
-            except Exception as e:
+            except ValueError as e:
                 logger.error(f"Failed to create vector store for collection '{collection_name}': {str(e)}")
-                continue
+                # Use default vector store type if the specified type is not supported
+                default_type = vector_store_configs['DEFAULT_PROVIDER']
+                logger.info(f"Attempting to create vector store with default type: {default_type}")
+                try:
+                    vector_store = self.vector_store_factory.create_vector_store(
+                        store_type=default_type,
+                        collection_name=collection_name,
+                        persist_directory=vector_store_configs.get("CHROMA_PERSIST_DIRECTORY")
+                    )
+                    self.vector_stores[domain.name] = vector_store
+                    logger.info(f"Created default {default_type} vector store for collection: {collection_name}")
+                except Exception as e:
+                    logger.error(f"Failed to create default vector store for collection '{collection_name}': {str(e)}")

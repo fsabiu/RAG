@@ -72,13 +72,23 @@ async def setup_rag(config_data: dict = Body(...)):
             result_re_ranker=merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True)
         )
         
+        # Logging before saving the configuration
+        logger.info("RAG system initialized successfully. Preparing to save configuration.")
+        logger.debug(f"CONFIGS_FOLDER path: {private_settings.CONFIGS_FOLDER}")
+        
         # Store the original config_data with timestamp
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         config_filename = f"config_{timestamp}.json"
         config_path = os.path.join(private_settings.CONFIGS_FOLDER, config_filename)
-        with open(config_path, "w") as config_file:
-            json.dump(config_data, config_file, indent=4)
         
+        logger.info(f"Saving configuration to file: {config_path}")
+        
+        try:
+            with open(config_path, "w") as config_file:
+                json.dump(config_data, config_file, indent=4)
+            logger.info("Configuration saved successfully.")
+        except IOError as e:
+            logger.error(f"Error writing configuration file: {str(e)}")
         return {"message": "RAG system setup successfully"}
     except Exception as e:
         logger.error(f"Error during setup: {str(e)}")

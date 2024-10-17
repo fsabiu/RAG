@@ -5,7 +5,7 @@ from .document_interface import DocumentInterface, DocumentFactoryInterface
 from .storage_interface import StorageInterface
 from .chunk_strategy_interface import ChunkStrategyInterface
 from .chat_model_interface import ChatModelInterface
-from .vector_store_interface import VectorStoreInterface
+from .vector_store_interface import VectorStoreInterface, VectorStoreFactoryInterface
 from .embedding_model_interface import EmbeddingModelInterface
 
 class DomainManagerInterface(ABC):
@@ -16,7 +16,8 @@ class DomainManagerInterface(ABC):
                  domain_factory: DomainFactoryInterface, 
                  document_factory: DocumentFactoryInterface,
                  vector_stores: Dict[str, VectorStoreInterface],
-                 embedding_model: EmbeddingModelInterface):
+                 embedding_model: EmbeddingModelInterface,
+                 vector_store_factory: VectorStoreFactoryInterface):
         pass
 
     @abstractmethod
