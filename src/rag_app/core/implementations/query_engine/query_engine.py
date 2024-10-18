@@ -20,7 +20,7 @@ class QueryEngine(QueryEngineInterface):
                  chunk_strategy: ChunkStrategyInterface,
                  query_optimizer: QueryOptimizerInterface,
                  result_re_ranker: ReRankerInterface,
-                 n_results: int):
+                 n_results: int = 5):
         self.domain_manager = domain_manager
         self.vector_stores = vector_stores
         self.embedding_model = embedding_model
