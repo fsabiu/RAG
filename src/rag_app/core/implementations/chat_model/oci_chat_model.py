@@ -5,7 +5,8 @@ from langchain_core.prompts import PromptTemplate
 from typing import Optional, Iterator, Union, AsyncIterator
 import oci
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
-from ...interfaces.conversation_interface import Conversation
+from ...interfaces.conversation_interface import ConversationInterface
+from ...implementations.conversation import Conversation
 
 # Enable debug logging for the entire oci package
 #logging.getLogger('oci').setLevel(logging.DEBUG)
@@ -25,7 +26,7 @@ class ChatModel(ChatModelInterface):
     def llm(self):
         pass
 
-    async def chat(self, system_prompt: str, query: str, conversation: Optional[Conversation] = Conversation(), stream: bool = False) -> Union[str, AsyncIterator[str]]:
+    async def chat(self, system_prompt: str, query: str, conversation: Optional[ConversationInterface] = Conversation(), stream: bool = False) -> Union[str, AsyncIterator[str]]:
         prompt_template = f"{system_prompt}\n\n"
         
         if conversation:
