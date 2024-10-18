@@ -108,25 +108,12 @@ class DomainManager(DomainManagerInterface):
                     continue
                 # Chunking text
                 chunks = self.chunk_strategy.chunk_text(content=content, document_id=document.id)
-                if len(chunks) > 0:
-                    logger.info(f"First chunk example:")
-                    logger.info(f"  Content: {chunks[0].content[:100]}...")  # Show first 100 characters
-                    logger.info(f"  Metadata: {chunks[0].metadata}")
-                    logger.info(f"  Chunk ID: {chunks[0].chunk_id}")
 
-                # Add document_name to each chunk's metadata
-                if len(chunks)>0:
-                    logger.info(f"Chunks chunked metadata like this {chunks[0].metadata}")
-                    logger.info(f"Chunks chunked content like this {chunks[0].content}")
                 for chunk in chunks:
                     chunk.metadata['document_name'] = document.name
                     chunk.metadata['document_id'] = document.id
                 document.chunks = chunks
-                if len(document.chunks) > 0:
-                    logger.info(f"First document chunk example:")
-                    logger.info(f"  Content: {document.chunks[0].content}...")  # Show first 100 characters
-                    logger.info(f"  Metadata: {document.chunks[0].metadata}")
-                    logger.info(f"  Chunk ID: {document.chunks[0].chunk_id}")
+
                 logger.debug(f"Chunked document {document.name} (ID: {document.id}) in domain {domain.name} into {len(chunks)} chunks")
                 
                 # Store embeddings and clear chunks from memory
@@ -186,12 +173,15 @@ class DomainManager(DomainManagerInterface):
             return
 
         try:
-            #vector_store.store_embeddings(embeddings, metadata, ids, [chunk.content for chunk in document.chunks])
+            vector_store.store_embeddings(
+                embeddings=embeddings, 
+                metadata=metadata, 
+                ids=ids, 
+                documents=[chunk.content for chunk in document.chunks]
+            )
             logger.info(f"Successfully stored embeddings for document {document.name} in domain {domain_name}")
         except Exception as e:
             logger.error(f"Error storing embeddings for document {document.name} in domain {domain_name}: {str(e)}")
-            # Optionally, you might want to re-raise the exception or handle it in a specific way
-            # raise
 
     def get_domain_documents(self, domain_name: str) -> List[DocumentInterface]:
         domain = self.get_domain(domain_name)

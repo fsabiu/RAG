@@ -2,6 +2,8 @@ import logging
 import sys
 import time
 import traceback  # Add this import
+from dotenv import load_dotenv
+import os
 
 # Interfaces and Implementations
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
@@ -19,6 +21,9 @@ from rag_app.core.implementations.storage.file_storage import FileStorage
 logger = logging.getLogger(__name__)
 
 def initialize_rag_components(config_data: dict):
+    # Load environment variables from .env file
+    load_dotenv()
+
     try:
         chat_model: ChatModelInterface = OCI_CommandRplus(config_data["chat_model"])
         logger.info(f"{chat_model.__class__.__name__} chat model initialized successfully")
@@ -40,6 +45,11 @@ def initialize_rag_components(config_data: dict):
     logger.info("Initializing embedding model...")
     try:
         if config_data['embedding_model']['PROVIDER'].lower() == "cohere":
+                # Verify that the COHERE_API_KEY is loaded
+            cohere_api_key = os.getenv('COHERE_API_KEY')
+            if not cohere_api_key:
+                raise ValueError("COHERE_API_KEY environment variable is not set or empty")
+                
             embedding_model = CohereEmbedding(model_name=config_data['embedding_model']['MODEL_NAME'])
             logger.info(f"CohereEmbedding model '{config_data['embedding_model']['MODEL_NAME']}' initialized successfully")
         elif config_data['embedding_model']['PROVIDER'].lower() == "ollama":

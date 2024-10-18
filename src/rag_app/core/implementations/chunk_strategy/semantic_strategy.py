@@ -48,7 +48,7 @@ class SemanticChunkStrategy(ChunkStrategyInterface):
                 current_chunk_seq[0] += 1
                 return [Chunk(
                     document_id=document_id,
-                    chunk_id=f"{document_id}_{chunk_seq:04d}",
+                    chunk_id=f"{document_id}_{chunk_seq}",
                     content=chunk_content,
                     metadata={
                         "start_sentence": start_idx,
