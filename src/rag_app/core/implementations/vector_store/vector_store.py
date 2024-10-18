@@ -30,7 +30,7 @@ class ChromaVectorStore(VectorStoreInterface):
         return [
             {
                 "id": id,
-                "score": 1 - distance,  # Convert distance to similarity score
+                "score": 1 - distance,
                 "metadata": metadata,
                 "document": document
             }
