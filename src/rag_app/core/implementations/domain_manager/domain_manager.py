@@ -113,17 +113,15 @@ class DomainManager(DomainManagerInterface):
                     chunk.metadata['document_name'] = document.name
                     chunk.metadata['document_id'] = document.id
                 document.chunks = chunks
-
-                logger.debug(f"Chunked document {document.name} (ID: {document.id}) in domain {domain.name} into {len(chunks)} chunks")
                 
                 # Store embeddings and clear chunks from memory
-                #self.embed_and_store_documents(domain.name, document)
+                self.embed_and_store_documents(domain.name, document)
                 
-                # Store chunks in JSON file
+                # Store chunks in JSON file - Debug
                 self.store_chunks(domain.name, document)
                 
-                document.chunks = []  # Clear chunks from memory
-                document.content = None  # Clear content from memory
+                document.chunks = [] 
+                document.content = None
 
     def store_chunks(self, domain_name: str, document: DocumentInterface) -> None:
         strategy_name = self.chunk_strategy.strategy_name
@@ -146,8 +144,6 @@ class DomainManager(DomainManagerInterface):
             }
             for chunk in document.chunks
         ]
-        if len(chunks_data)>0:
-            logger.info(f"Saving chunks like this {chunks_data[0]}")
         
         # Write chunks to JSON file
         try:

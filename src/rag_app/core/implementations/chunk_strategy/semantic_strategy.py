@@ -52,8 +52,7 @@ class SemanticChunkStrategy(ChunkStrategyInterface):
                     content=chunk_content,
                     metadata={
                         "start_sentence": start_idx,
-                        "end_sentence": end_idx,
-                        "sentence_ids": sentence_ids[start_idx:end_idx + 1]
+                        "end_sentence": end_idx
                     }
                 )]
             

@@ -19,6 +19,7 @@ config/
 
 # Database files
 *.sqlite3
+chroma_db/
 
 # IDE-specific files (if you're using an IDE)
 .vscode/
