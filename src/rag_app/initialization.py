@@ -66,10 +66,10 @@ def initialize_rag_components(config_data: dict):
         logger.info(f"Using FixedSizeChunkStrategy with chunk size {config_data['chunking']['CHUNK_SIZE']} and overlap {config_data['chunking']['CHUNK_OVERLAP']}")
     elif config_data['chunking']['STRATEGY'] == "semantic":
         chunk_strategy = SemanticChunkStrategy(
-            max_chunk_size=config_data['chunking']['CHUNK_SIZE'],
+            max_chunk_size=config_data['chunking']['MAX_CHUNK_SIZE'],
             embedding_model=embedding_model
         )
-        logger.info(f"Using SemanticChunkStrategy with max chunk size {config_data['chunking']['CHUNK_SIZE']}")
+        logger.info(f"Using SemanticChunkStrategy with max chunk size {config_data['chunking']['MAX_CHUNK_SIZE']}")
     else:
         logger.error(f"Invalid chunking strategy: {config_data['chunking']['STRATEGY']}")
         sys.exit(1)

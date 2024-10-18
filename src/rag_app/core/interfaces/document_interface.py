@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Protocol, Optional, Dict
+from typing import List, Protocol, Optional, Dict, Any
 
 class Chunk:
-    def __init__(self, document_id: str, chunk_id: str, metadata: Dict[str, any], content: str):
-        self.document_id = document_id
-        self.chunk_id = chunk_id
-        self.metadata = metadata
+    def __init__(self, document_id: str, chunk_id: str, content: str, metadata: Dict[str, Any] = None):
         self.content = content
-        self.document_name = metadata.get('document_name', '')  # Add this line
+        self.document_id = document_id
+        self.metadata = metadata or {}
+        self.chunk_id = chunk_id
 
 class DocumentInterface(ABC):
     @property

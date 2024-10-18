@@ -61,6 +61,7 @@ async def setup_rag(config_data: dict = Body(...)):
         
         # Initialize components using the merged configuration
         domain_manager, chat_model, embedding_model, chunk_strategy = initialize_rag_components(merged_config)
+        domain_manager.apply_chunking_strategy()
         
         # Initialize the query engine with the components
         query_engine = QueryEngine(
