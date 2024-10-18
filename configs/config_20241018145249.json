@@ -1,0 +1,33 @@
+{
+    "chunking": {
+        "STRATEGY": "semantic",
+        "MAX_CHUNK_SIZE": 1220
+    },
+    "query_engine": {
+        "USE_QUERY_OPTIMIZER": true,
+        "USE_RESULT_RE_RANKER": true
+    },
+    "chat_model": {
+        "PROVIDER": "oci",
+        "MODEL_ID": "cohere.command-r-plus",
+        "TEMPERATURE": 0.0,
+        "MAX_TOKENS": 4000,
+        "TOP_P": 0.75
+    },
+    "embedding_model": {
+        "PROVIDER": "ollama",
+        "MODEL_NAME": "mxbai-embed-large",
+        "EMBEDDING_DIMENSION": 1024
+    },
+    "vector_store": {
+        "DEFAULT_PROVIDER": "Chroma",
+        "DOMAIN_CONFIG": {
+            "domain_name1": "Chroma",
+            "domain_name2": "Oracle23ai"
+        }
+    },
+    "document": {
+        "IMPLEMENTATION": "Python",
+        "DB_CONNECTION_STRING": null
+    }
+}

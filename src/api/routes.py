@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import glob
+import traceback
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -94,6 +95,7 @@ async def setup_rag(config_data: dict = Body(...)):
         return {"message": "RAG system setup successfully"}
     except Exception as e:
         logger.error(f"Error during setup: {str(e)}")
+        logger.error(f"Traceback:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="An error occurred during setup")
 
 @router.get("/setup_rag_template")

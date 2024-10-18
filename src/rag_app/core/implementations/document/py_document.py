@@ -50,7 +50,11 @@ class PythonDocument(DocumentInterface):
 
     @chunks.setter
     def chunks(self, value: List[Chunk]) -> None:
-        self._chunks = [Chunk(chunk.document_id, chunk.chunk_id, {**chunk.metadata, 'document_name': self._name}, chunk.content) for chunk in value]
+        self._chunks = [Chunk(document_id=chunk.document_id, 
+                              chunk_id=chunk.chunk_id, 
+                              content=chunk.content, 
+                              metadata={**chunk.metadata, 'document_name': self._name}) 
+                        for chunk in value]
 
     def __repr__(self):
         return f"PythonDocument(id='{self.id}', name='{self.name}', collection='{self.collection}', title='{self.title}', keywords={len(self._keywords)}, chunks={len(self._chunks)})"
