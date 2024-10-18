@@ -4,10 +4,13 @@ import sys
 import logging
 import json
 from fastapi import APIRouter, Depends, HTTPException, Body
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from datetime import datetime
 import glob
 import traceback
+from pydantic import BaseModel
+from typing import List, Dict
+import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -16,6 +19,7 @@ from rag_app.core.interfaces.query_engine_interface import QueryEngineInterface
 from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterface
 
 # Implementations
+from rag_app.core.implementations.conversation.conversation import Conversation
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
 from rag_app.private_config import private_settings
 
@@ -42,10 +46,15 @@ def get_domain_manager():
         raise HTTPException(status_code=500, detail="Domain manager not initialized")
     return domain_manager
 
-# API Routes
 
-from src.rag_app.private_config import private_settings
-from src.rag_app.public_config import public_settings
+# Add this new model
+class AskRequest(BaseModel):
+    message: str
+    genModel: str
+    conversation: List[Dict[str, str]] = []
+
+# Add this global variable
+global_conversation = None
 
 @router.post("/setup_rag")
 async def setup_rag(config_data: dict = Body(...)):
@@ -114,13 +123,60 @@ async def ask(question: str, domain_name: str, query_engine: QueryEngineInterfac
     Ask a question within a specific domain.
     """
     try:
-        logger.info(f"Received question: {question} for domain: {domain_name}")
-        result = query_engine.ask_question(question, domain_name)
-        logger.info(f"Successfully processed question.")
-        return result
+        global global_conversation
+        
+        if not request.conversation:
+            # Use the global conversation if the request doesn't provide one
+            if global_conversation is None:
+                global_conversation = Conversation()
+            conversation = global_conversation
+        else:
+            # Create a new Conversation instance with the provided messages
+            conversation = Conversation()
+            for msg in request.conversation:
+                conversation.add_message(role=msg['role'], content=msg['content'])
+        
+        full_response = ""
+        
+        async def content_generator():
+            nonlocal full_response
+            async for chunk in await query_engine.ask_question(
+                query=request.message,
+                model_name=request.genModel,
+                conversation=conversation,
+                stream=True
+            ):
+                full_response += chunk
+                response = {
+                    'content': chunk, 
+                    'type': 'content',
+                    'timestamp': time.time()
+                }
+                logging.info(f"Yielding content: {response}")
+                yield f"data: {json.dumps(response)}\n\n"
+            
+            # Add the user's message to the conversation
+            conversation.add_message("User", request.message)
+
+            # Add the assistant's message to the conversation
+            conversation.add_message("Assistant", full_response)
+            
+            # Update the global conversation after processing
+            global_conversation = conversation
+            
+            # Include the updated conversation in the final response
+            done_response = {
+                'type': 'done', 
+                'timestamp': time.time(),
+                'conversation': [{"role": msg.role, "content": msg.content} for msg in conversation.get_history()]
+            }
+            yield f"data: {json.dumps(done_response)}\n\n"
+
+        return StreamingResponse(content_generator(), media_type="text/event-stream")
     except Exception as e:
-        logger.error(f"Error processing question: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_message = str(e)
+        logging.error(f"Error in /ask endpoint: {error_message}")
+        raise HTTPException(status_code=500, detail=error_message)
 
 @router.get("/domains")
 async def get_domains(domain_manager=Depends(get_domain_manager)):
