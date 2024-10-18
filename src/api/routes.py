@@ -1,4 +1,3 @@
-# Add the parent directory of 'api' (which should be 'src') to the Python path
 import os
 import sys
 import logging
@@ -60,7 +59,7 @@ global_conversation = None
 async def setup_rag(config_data: dict = Body(...)):
     global query_engine, domain_manager
     
-    try:        
+    try:
         # Merge public settings with incoming config_data
         merged_config = merge_configs(private_settings.dict(), config_data)
         
@@ -178,36 +177,6 @@ async def ask(question: str, domain_name: str, query_engine: QueryEngineInterfac
         logging.error(f"Error in /ask endpoint: {error_message}")
         raise HTTPException(status_code=500, detail=error_message)
 
-@router.get("/domains")
-async def get_domains(domain_manager=Depends(get_domain_manager)):
-    """
-    Get a list of all domains.
-    """
-    try:
-        domains = domain_manager.get_domains()
-        return {"domains": domains}
-    except Exception as e:
-        logger.error(f"Error retrieving domains: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/domains")
-async def add_domain(name: str, description: str, domain_manager=Depends(get_domain_manager)):
-    """
-    Add a new domain.
-    """
-    try:
-        domain_manager.add_domain(name, description)
-        logger.info(f"Successfully added domain: {name}")
-        return {"message": f"Domain '{name}' added successfully"}
-    except ValueError as ve:
-        logger.error(f"Error adding domain: {str(ve)}")
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        logger.error(f"Unexpected error adding domain: {str(e)}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred")
-
-@router.delete("/domains/{domain_name}")
-async def delete_domain(domain_name: str, domain_manager=Depends(get_domain_manager)):
     """
     Delete a domain.
     """
@@ -221,20 +190,29 @@ async def delete_domain(domain_name: str, domain_manager=Depends(get_domain_mana
         logger.error(f"Error deleting domain: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/configure")
-async def configure(config_data: dict):
+@router.get("/rag_config")
+async def rag_config():
+    """
+    Retrieve the most recent RAG configuration.
+    """
     try:
-        # Write the configuration data to a file
-        with open("src/rag_app/config.json", "w") as config_file:
-            json.dump(config_data, config_file)
+        config_folder = private_settings.CONFIGS_FOLDER
+        config_files = glob.glob(os.path.join(config_folder, "config_*.json"))
         
-        # Optionally, trigger the preparation phase here
-        # prepare_data()
-
-        return {"message": "Configuration updated successfully"}
+        if not config_files:
+            raise HTTPException(status_code=404, detail="No configuration files found")
+        
+        # Sort files by name (which includes timestamp) in descending order
+        latest_config_file = max(config_files)
+        
+        with open(latest_config_file, "r") as file:
+            config_data = json.load(file)
+        
+        logger.info(f"Successfully retrieved latest RAG configuration: {latest_config_file}")
+        return JSONResponse(content=config_data)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        logger.error(f"Error retrieving RAG configuration: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while retrieving the configuration")
 
 def merge_configs(base_config: dict, new_config: dict) -> dict:
     """
@@ -266,27 +244,3 @@ def merge_configs(base_config: dict, new_config: dict) -> dict:
             logger.debug(f"Set value for key '{key}': {merged_config[key]}")
     
     return merged_config
-
-@router.get("/rag_config")
-async def rag_config():
-    """
-    Retrieve the most recent RAG configuration.
-    """
-    try:
-        config_folder = private_settings.CONFIGS_FOLDER
-        config_files = glob.glob(os.path.join(config_folder, "config_*.json"))
-        
-        if not config_files:
-            raise HTTPException(status_code=404, detail="No configuration files found")
-        
-        # Sort files by name (which includes timestamp) in descending order
-        latest_config_file = max(config_files)
-        
-        with open(latest_config_file, "r") as file:
-            config_data = json.load(file)
-        
-        logger.info(f"Successfully retrieved latest RAG configuration: {latest_config_file}")
-        return JSONResponse(content=config_data)
-    except Exception as e:
-        logger.error(f"Error retrieving RAG configuration: {str(e)}")
-        raise HTTPException(status_code=500, detail="An error occurred while retrieving the configuration")

@@ -22,8 +22,8 @@ class DocumentSettings(BaseModel):
     DB_CONNECTION_STRING: Optional[str] = None  # Required if IMPLEMENTATION is "OCI_DB"
 
 class PrivateSettings(BaseSettings):
-    APP_NAME: str = "RAG Application"
-    APP_VERSION: str = "0.1.0"
+    APP_NAME: str = "OrAsk"
+    APP_VERSION: str = "0.1"
     DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     DATABASE_URL: str
