@@ -6,7 +6,7 @@ from typing import Optional, Iterator, Union, AsyncIterator
 import oci
 from rag_app.core.interfaces.chat_model_interface import ChatModelInterface
 from ...interfaces.conversation_interface import ConversationInterface
-from ...implementations.conversation import Conversation
+from rag_app.core.implementations.conversation.conversation import Conversation
 
 # Enable debug logging for the entire oci package
 #logging.getLogger('oci').setLevel(logging.DEBUG)

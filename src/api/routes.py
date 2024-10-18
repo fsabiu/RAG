@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import json
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from datetime import datetime
 import glob
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # These will be updated in the /setup_RAG endpoint
-query_engine = None
+query_engine: QueryEngine = None
 domain_manager = None
 
 def get_query_engine():
@@ -83,26 +83,21 @@ async def setup_rag(config_data: dict = Body(...)):
             result_re_ranker=merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True)
         )
         
-        # Logging before saving the configuration
-        logger.info("RAG system initialized successfully. Preparing to save configuration.")
-        logger.debug(f"CONFIGS_FOLDER path: {private_settings.CONFIGS_FOLDER}")
-        
         # Store the original config_data with timestamp
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         config_filename = f"config_{timestamp}.json"
         config_path = os.path.join(private_settings.CONFIGS_FOLDER, config_filename)
         
-        logger.info(f"Saving configuration to file: {config_path}")
-        
+        logger.info(f"Saving configuration to file: {config_path}") 
         try:
             with open(config_path, "w") as config_file:
                 json.dump(config_data, config_file, indent=4)
             logger.info("Configuration saved successfully.")
         except IOError as e:
             logger.error(f"Error writing configuration file: {str(e)}")
+        
         return {"message": "RAG system setup successfully"}
     except Exception as e:
-        logger.error(f"Error during setup: {str(e)}")
         logger.error(f"Traceback:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="An error occurred during setup")
 
@@ -117,7 +112,10 @@ async def get_setup_rag_template():
         raise HTTPException(status_code=500, detail="An error occurred while loading the template")
 
 @router.post("/ask")
-async def ask(question: str, domain_name: str, query_engine: QueryEngineInterface = Depends(get_query_engine)):
+async def ask(
+    request: AskRequest,
+    query_engine: QueryEngineInterface = Depends(get_query_engine)
+):
     """
     Ask a question within a specific domain.
     """

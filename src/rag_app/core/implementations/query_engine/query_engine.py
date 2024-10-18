@@ -27,8 +27,19 @@ class QueryEngine(QueryEngineInterface):
         self.chat_model = chat_model
         self.query_optimizer = query_optimizer
         self.result_re_ranker = result_re_ranker
+        self.n_results = n_results
         logger.info("QueryEngine initialized")
 
+    @property
+    def n_results(self) -> int:
+        return self._n_results
+
+    @n_results.setter
+    def n_results(self, value: int):
+        if not isinstance(value, int) or value <= 0:
+            raise ValueError("n_results must be a positive integer")
+        self._n_results = value
+        logger.info(f"n_results updated to {value}")
 
     def ask_question(self, question: str, domain_name: str) -> Dict[str, Any]:
         logger.info(f"Processing question: {question} for domain: {domain_name}")
