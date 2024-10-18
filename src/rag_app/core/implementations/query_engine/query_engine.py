@@ -19,34 +19,16 @@ class QueryEngine(QueryEngineInterface):
                  chat_model: ChatModelInterface,
                  chunk_strategy: ChunkStrategyInterface,
                  query_optimizer: QueryOptimizerInterface,
-                 result_re_ranker: ReRankerInterface):
+                 result_re_ranker: ReRankerInterface,
+                 n_results: int):
         self.domain_manager = domain_manager
         self.vector_stores = vector_stores
         self.embedding_model = embedding_model
         self.chat_model = chat_model
-        self.chunk_strategy = chunk_strategy
         self.query_optimizer = query_optimizer
         self.result_re_ranker = result_re_ranker
         logger.info("QueryEngine initialized")
 
-    def prepare_domains(self) -> None:
-        logger.info("Preparing domains for offline processing")
-        for domain in self.domain_manager.get_domains():
-            self._prepare_domain(domain)
-
-    def _prepare_domain(self, domain):
-        logger.info(f"Preparing domain: {domain.name}")
-        domain.summarize_documents()
-        domain.chunk_documents(self.chunk_strategy)
-        domain.embed_chunks(self.embedding_model)
-        self._store_embeddings(domain)
-
-    def _store_embeddings(self, domain):
-        vector_store = self.vector_stores.get(domain.name)
-        if vector_store:
-            domain.store_embeddings(vector_store)
-        else:
-            logger.error(f"No vector store found for domain: {domain.name}")
 
     def ask_question(self, question: str, domain_name: str) -> Dict[str, Any]:
         logger.info(f"Processing question: {question} for domain: {domain_name}")
@@ -59,9 +41,9 @@ class QueryEngine(QueryEngineInterface):
             logger.error(f"Error finding domain or vector store: {str(e)}")
             raise
 
-        optimized_query = self.query_optimizer.optimize(question)
-        query_embedding = self.embedding_model.generate_embedding(optimized_query)
-        results = vector_store.query(query_embedding)
+        # optimized_query = self.query_optimizer.optimize(question)
+        # query_embedding = self.embedding_model.generate_embedding(optimized_query)
+        results = vector_store.query(query_embedding=query_embedding, n_results=n_results)
         ranked_results = self.result_re_ranker.re_rank(results, question)
         
         context = "\n".join([result["document"] for result in ranked_results[:3]])
