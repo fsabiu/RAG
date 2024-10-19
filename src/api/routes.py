@@ -52,8 +52,12 @@ class AskRequest(BaseModel):
     genModel: str
     conversation: List[Dict[str, str]] = []
 
+# **New: InitRequest Model**
+class InitRequest(BaseModel):
+    genModel: str
+
 # Add this global variable
-global_conversation = None
+global_conversation: Conversation = None
 
 @router.post("/setup_rag")
 async def setup_rag(config_data: dict = Body(...)):
@@ -137,9 +141,9 @@ async def ask(
         
         async def content_generator():
             nonlocal full_response
-            async for chunk in await query_engine.ask_question(
-                query=request.message,
-                model_name=request.genModel,
+            async for chunk in await query_engine.ask_question_stream(
+                question=request.message,
+                domain_name=request.genModel,  # Adjust if domain_name is different
                 conversation=conversation,
                 stream=True
             ):
@@ -152,23 +156,17 @@ async def ask(
                 logging.info(f"Yielding content: {response}")
                 yield f"data: {json.dumps(response)}\n\n"
             
-            # Add the user's message to the conversation
-            conversation.add_message("User", request.message)
-
             # Add the assistant's message to the conversation
-            conversation.add_message("Assistant", full_response)
+            global_conversation.add_message("Assistant", full_response)
             
-            # Update the global conversation after processing
-            global_conversation = conversation
-            
-            # Include the updated conversation in the final response
             done_response = {
                 'type': 'done', 
                 'timestamp': time.time(),
-                'conversation': [{"role": msg.role, "content": msg.content} for msg in conversation.get_history()]
+                'conversation': [{"role": msg.role, "content": msg.content} for msg in global_conversation.get_history()]
             }
             yield f"data: {json.dumps(done_response)}\n\n"
-
+        
+        logging.info("Successfully generated response, returning StreamingResponse")
         return StreamingResponse(content_generator(), media_type="text/event-stream")
     except Exception as e:
         error_message = str(e)
@@ -187,6 +185,51 @@ async def ask(
     except Exception as e:
         logger.error(f"Error deleting domain: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/init")
+async def initialize(
+    request: InitRequest,
+    query_engine: QueryEngineInterface = Depends(get_query_engine)
+):
+    """
+    Initialize the chat model with the specified generation model.
+    """
+    try:
+        init_prompt = private_settings.INIT_PROMPT
+        full_response = ""
+        
+        async def content_generator():
+            nonlocal full_response
+            async for chunk in await query_engine.send_initial_message(
+                model_name=request.genModel,
+                prompt=init_prompt,
+                stream=True
+            ):
+                full_response += chunk
+                response = {
+                    'content': chunk, 
+                    'type': 'content',
+                    'timestamp': time.time()
+                }
+                logging.info(f"Yielding content: {response}")
+                yield f"data: {json.dumps(response)}\n\n"
+            
+            # Add the assistant's message to the conversation
+            global_conversation.add_message("Assistant", full_response)
+            
+            done_response = {
+                'type': 'done', 
+                'timestamp': time.time(),
+                'conversation': [{"role": msg.role, "content": msg.content} for msg in global_conversation.get_history()]
+            }
+            yield f"data: {json.dumps(done_response)}\n\n"
+        
+        logging.info("Successfully generated response, returning StreamingResponse")
+        return StreamingResponse(content_generator(), media_type="text/event-stream")
+    except Exception as e:
+        error_message = str(e)
+        logging.error(f"Error in /init endpoint: {error_message}")
+        raise HTTPException(status_code=500, detail=error_message)
 
 @router.get("/rag_config")
 async def rag_config():
