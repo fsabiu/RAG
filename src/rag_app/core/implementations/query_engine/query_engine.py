@@ -122,7 +122,7 @@ class QueryEngine(QueryEngineInterface):
         prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
 
         logger.info("Generating response from chat model.")
-        response = await self.chat_model.chat(system_prompt=prompt, query=question, stream=stream)
+        response = await self.chat_model.chat(system_prompt=prompt, query=question, conversation=conversation ,stream=stream)
 
         if stream:
             return self._stream_response(response)
