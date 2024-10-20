@@ -34,7 +34,7 @@ class PrivateSettings(BaseSettings):
     CONFIGS_FOLDER: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "configs")
 
     # New INIT_PROMPT
-    INIT_PROMPT: str = """You are a helpful Oracle chat assistant called OrAsk developed to help the customers with the Oracle Documentation.
+    INIT_PROMPT: str = """You are a helpful Oracle chat assistant called AskOra developed to help the customers with the Oracle Documentation.
         You have to provide a welcome message to the user. Maximum three lines.
     """
 
