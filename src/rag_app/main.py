@@ -9,7 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from ..api import routes
 from rag_app.private_config import private_settings
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
+from rag_app.core.implementations.reranker.reranker import ResultReRanker
 from rag_app.initialization import initialize_rag_components
+from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -76,8 +78,8 @@ async def init_query_engine():
             embedding_model=embedding_model,
             chat_model=chat_model,
             chunk_strategy=chunk_strategy,
-            query_optimizer=merged_config['query_engine'].get('USE_QUERY_OPTIMIZER', True),
-            result_re_ranker=merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True)
+            query_optimizer=QueryOptimizer() if merged_config['query_engine'].get('USE_QUERY_OPTIMIZER', True) else None,
+            result_re_ranker=ResultReRanker() if merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True) else None
         )
 
         # Update the global query_engine in the routes module

@@ -16,6 +16,7 @@ config/
 
 # Logs
 *.log
+logs/
 
 # Database files
 *.sqlite3

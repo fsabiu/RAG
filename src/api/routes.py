@@ -8,7 +8,7 @@ from datetime import datetime
 import glob
 import traceback
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,6 +20,7 @@ from rag_app.core.interfaces.domain_manager_interface import DomainManagerInterf
 # Implementations
 from rag_app.core.implementations.conversation.conversation import Conversation
 from rag_app.core.implementations.query_engine.query_engine import QueryEngine
+from rag_app.core.implementations.query_optimizer.query_optimizer import QueryOptimizer
 from rag_app.private_config import private_settings
 
 # Config
@@ -56,8 +57,14 @@ class AskRequest(BaseModel):
 class InitRequest(BaseModel):
     genModel: str
 
-# Add this global variable
-global_conversation: Conversation = None
+# Add this global variable to store the single conversation
+global_conversation: Optional[Conversation] = Conversation()
+
+@router.post("/clean_conversation")
+async def clean_conversation():
+    global global_conversation
+    global_conversation = Conversation()
+    return {"message": "Conversation has been cleaned."}
 
 @router.post("/setup_rag")
 async def setup_rag(config_data: dict = Body(...)):
@@ -83,8 +90,8 @@ async def setup_rag(config_data: dict = Body(...)):
             embedding_model=embedding_model,
             chat_model=chat_model,
             chunk_strategy=chunk_strategy,
-            query_optimizer=merged_config['query_engine'].get('USE_QUERY_OPTIMIZER', True),
-            result_re_ranker=merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True)
+            query_optimizer=QueryOptimizer() if merged_config['query_engine'].get('USE_QUERY_OPTIMIZER', True) else None,
+            result_re_ranker=ResultReRanker() if merged_config['query_engine'].get('USE_RESULT_RE_RANKER', True) else None
         )
         
         # Store the original config_data with timestamp
@@ -141,10 +148,11 @@ async def ask(
         
         async def content_generator():
             nonlocal full_response
-            async for chunk in await query_engine.ask_question_stream(
+            async for chunk in await query_engine.ask_question(
                 question=request.message,
-                domain_name=request.genModel,  # Adjust if domain_name is different
+                model_name=request.genModel,
                 conversation=conversation,
+                domain_names=None,
                 stream=True
             ):
                 full_response += chunk
@@ -156,6 +164,9 @@ async def ask(
                 logging.info(f"Yielding content: {response}")
                 yield f"data: {json.dumps(response)}\n\n"
             
+            # Add the user's message to the conversation
+            conversation.add_message("User", request.message)
+
             # Add the assistant's message to the conversation
             global_conversation.add_message("Assistant", full_response)
             
@@ -172,19 +183,6 @@ async def ask(
         error_message = str(e)
         logging.error(f"Error in /ask endpoint: {error_message}")
         raise HTTPException(status_code=500, detail=error_message)
-
-    """
-    Delete a domain.
-    """
-    try:
-        domain_manager.delete_domain(domain_name)
-        logger.info(f"Successfully deleted domain: {domain_name}")
-        return {"message": f"Domain '{domain_name}' deleted successfully"}
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Domain '{domain_name}' not found")
-    except Exception as e:
-        logger.error(f"Error deleting domain: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/init")
 async def initialize(

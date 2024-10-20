@@ -7,7 +7,7 @@ class VectorStoreInterface(ABC):
         pass
 
     @abstractmethod
-    def query(self, query_embedding: List[float], top_k: int = 10) -> List[Dict[str, Any]]:
+    def query(self, query_embedding: List[float], n_results: int = 10) -> List[Dict[str, Any]]:
         pass
 
 class VectorStoreFactoryInterface(ABC):

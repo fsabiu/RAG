@@ -20,11 +20,11 @@ class ChromaVectorStore(VectorStoreInterface):
             documents=documents
         )
 
-    def query(self, query_embedding: List[float], top_k: int = 10) -> List[Dict[str, Any]]:
-        logger.info(f"Querying vector store for top {top_k} results")
+    def query(self, query_embedding: List[float], n_results: int = 10) -> List[Dict[str, Any]]:
+        logger.info(f"Querying vector store for top {n_results} results")
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k,
+            n_results=n_results,
             include=["metadatas", "distances", "documents"]
         )
         return [
