@@ -119,8 +119,17 @@ class QueryEngine(QueryEngineInterface):
 
         # Build context from top-ranked results
         context = "\n".join([result["document"] for result in ranked_results[:3]])
-        prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
+        prompt = f"""You are an Oracle Assistant and your goal is to provide assistance and help about the concept and terminology of the 
+        Oracle Documentation. You respond in markdown fetching information highlighting the most important terms.
+        If you need it to respond the user question on specific domains, you can use the following context (it may not be required).
 
+        Context: 
+        {context}\n\n
+        Question: 
+        {question}
+        \n\n
+        Answer:
+        """
         logger.info("Generating response from chat model.")
         response = await self.chat_model.chat(system_prompt=prompt, query=question, conversation=conversation ,stream=stream)
 
