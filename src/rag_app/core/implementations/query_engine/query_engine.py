@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any, AsyncGenerator, Optional, Iterator, Union, AsyncIterator
+from typing import List, Dict, Any, AsyncGenerator, Optional, Iterator, Union, AsyncIterator, Tuple
 from ...interfaces.query_engine_interface import QueryEngineInterface
 from ...interfaces.domain_manager_interface import DomainManagerInterface
 from ...interfaces.vector_store_interface import VectorStoreInterface
@@ -53,7 +53,7 @@ class QueryEngine(QueryEngineInterface):
         response = await self.chat_model.chat(prompt, "", stream=stream)
         
         if stream:
-            return self._stream_response(response)
+            return self._stream_response(response, sources=[])
         else:
             return response.content if hasattr(response, 'content') else str(response)
 
@@ -64,7 +64,7 @@ class QueryEngine(QueryEngineInterface):
         model_name: str = "OCI_CommandRplus",
         conversation: ConversationInterface = None, 
         stream: bool = True
-    ) -> Union[str, AsyncIterator[str]]:
+    ) -> Union[Tuple[str, List], AsyncIterator[Tuple[str, List]]]:
         """
         Ask a question across multiple domains and stream the response in chunks.
 
@@ -134,9 +134,10 @@ class QueryEngine(QueryEngineInterface):
         response = await self.chat_model.chat(system_prompt=prompt, query=question, conversation=conversation ,stream=stream)
 
         if stream:
-            return self._stream_response(response)
+            return self._stream_response(response, ranked_results)
         else:
-            return response.content if hasattr(response, 'content') else str(response)
+            full_response = await response
+            return full_response, ranked_results
 
     def initialize_chat_model(self, gen_model: str, init_prompt: str) -> Dict[str, Any]:
         """
@@ -153,6 +154,7 @@ class QueryEngine(QueryEngineInterface):
             logger.error(f"Failed to initialize chat model: {str(e)}")
             raise
 
-    async def _stream_response(self, response: AsyncIterator[str]) -> AsyncIterator[str]:
+    async def _stream_response(self, response: AsyncIterator[str], sources: List) -> AsyncIterator[Tuple[str, List]]:
         async for chunk in response:
-            yield chunk
+            yield chunk, None
+        yield "", sources

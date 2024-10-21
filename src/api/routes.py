@@ -8,7 +8,7 @@ from datetime import datetime
 import glob
 import traceback
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import time
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -145,16 +145,27 @@ async def ask(
                 conversation.add_message(role=msg['role'], content=msg['content'])
         
         full_response = ""
+        sources = []
         
         async def content_generator():
-            nonlocal full_response
-            async for chunk in await query_engine.ask_question(
+            nonlocal full_response, sources
+            async for result in await query_engine.ask_question(
                 question=request.message,
                 model_name=request.genModel,
                 conversation=conversation,
                 domain_names=None,
                 stream=True
             ):
+                if isinstance(result, tuple):
+                    chunk, chunk_sources = result
+                    if chunk_sources is not None:
+                        # This is the last message containing sources, don't yield the chunk
+                        sources = chunk_sources
+                        continue
+                else:
+                    # If it's not a tuple, it's just a chunk
+                    chunk = result
+
                 full_response += chunk
                 response = {
                     'content': chunk, 
@@ -173,7 +184,8 @@ async def ask(
             done_response = {
                 'type': 'done', 
                 'timestamp': time.time(),
-                'conversation': [{"role": msg.role, "content": msg.content} for msg in global_conversation.get_history()]
+                'conversation': [{"role": msg.role, "content": msg.content} for msg in global_conversation.get_history()],
+                'sources': sources
             }
             yield f"data: {json.dumps(done_response)}\n\n"
         
@@ -195,14 +207,26 @@ async def initialize(
     try:
         init_prompt = private_settings.INIT_PROMPT
         full_response = ""
-        
+        sources = []
+
         async def content_generator():
-            nonlocal full_response
-            async for chunk in await query_engine.send_initial_message(
+            nonlocal full_response, sources
+
+            async for result in await query_engine.send_initial_message(
                 model_name=request.genModel,
                 prompt=init_prompt,
                 stream=True
             ):
+                if isinstance(result, tuple):
+                    chunk, chunk_sources = result
+                    if chunk_sources is not None:
+                        # This is the last message containing sources, don't yield the chunk
+                        sources = chunk_sources
+                        continue
+                else:
+                    # If it's not a tuple, it's just a chunk
+                    chunk = result
+
                 full_response += chunk
                 response = {
                     'content': chunk, 
@@ -218,7 +242,8 @@ async def initialize(
             done_response = {
                 'type': 'done', 
                 'timestamp': time.time(),
-                'conversation': [{"role": msg.role, "content": msg.content} for msg in global_conversation.get_history()]
+                'conversation': [{"role": msg.role, "content": msg.content} for msg in global_conversation.get_history()],
+                'sources': sources
             }
             yield f"data: {json.dumps(done_response)}\n\n"
         
