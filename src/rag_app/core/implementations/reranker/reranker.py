@@ -9,6 +9,6 @@ class ResultReRanker(ReRankerInterface):
         logger.info(f"Re-ranking {len(results)} results for query: {original_query}")
         
         # Sort results by score in descending order
-        re_ranked_results = sorted(results, key=lambda x: x['score'], reverse=True)
+        re_ranked_results = sorted(results, key=lambda x: x['distance'], reverse=False)
         
         return re_ranked_results

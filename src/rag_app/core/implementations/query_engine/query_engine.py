@@ -120,7 +120,7 @@ class QueryEngine(QueryEngineInterface):
         # Build context from top-ranked results
         context = "\n".join([result["document"] for result in ranked_results[:3]])
         prompt = f"""You are an Oracle Assistant and your goal is to provide assistance and help about the concept and terminology of the 
-        Oracle Documentation. You respond in markdown fetching information highlighting the most important terms.
+        Oracle Documentation. You respond in markdown fetching information form the context.
         If you need it to respond the user question on specific domains, you can use the following context (it may not be required).
 
         Context: 

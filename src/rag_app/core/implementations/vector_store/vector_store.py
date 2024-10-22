@@ -30,7 +30,7 @@ class ChromaVectorStore(VectorStoreInterface):
         return [
             {
                 "id": id,
-                "score": 1 - distance,
+                "distance": distance,
                 "metadata": metadata,
                 "document": document
             }
